@@ -1,0 +1,35 @@
+# ---- Large data files (stay local) ----
+data/
+output/
+parquet/
+venv/
+.ruff_cache/
+.tmp_duckdb/
+*.duckdb
+*.duckdb.wal
+*.parquet
+*.csv
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+*.feather
+*.arrow
+*.zip
+
+# ---- PDFs (course material, kept out of git) ----
+docs_md/
+docs/*.pdf
+*.pdf
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# ---- Editor / OS ----
+.DS_Store
+Thumbs.db
+
+# ---- Keep the small team artifacts that happen to be CSV ----
+!Team2/*.csv

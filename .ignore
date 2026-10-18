@@ -1,0 +1,14 @@
+# Large data files - prevent indexing by coding tools
+data/
+output/
+venv/
+.ruff_cache/
+*.parquet
+*.csv
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+*.feather
+*.arrow
+__pycache__/

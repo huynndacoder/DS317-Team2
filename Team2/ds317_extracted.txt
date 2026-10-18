@@ -1,0 +1,444 @@
+                                                                 DS317 – Khai phá dữ liệu trong doanh nghiệp
+
+                       ĐẠI HỌC QUỐC GIA THÀNH PHỐ HỒ CHÍ MINH
+                      TRƯỜNG ĐẠI HỌC CÔNG NGHỆ THÔNG TIN
+                      KHOA KHOA HỌC VÀ KỸ THUẬT THÔNG TIN
+
+
+
+
+                  HƯỚNG DẪN ĐỒ ÁN MÔN HỌC
+  MÔN HỌC: DS317 – KHAI PHÁ DỮ LIỆU TRONG DOANH NGHIỆP
+
+                        TRIỂN KHAI HOÀN THIỆN ĐỀ TÀI
+Thực hiện đầy đủ các nội dung đã cam kết trong “Thuyết minh đề tài” được duyệt ở Bài
+                                    thực hành 3
+
+
+
+
+       Hạng mục                                              Nội dung
+
+Mã môn học                 DS317 – Khai phá dữ liệu trong doanh nghiệp (Data Mining for Enterprise)
+
+Thành phần đánh giá        A4 – Đồ án cuối kỳ (50% điểm tổng kết môn học)
+
+Chuẩn đầu ra               G1.1, G2.1, G2.2, G3.1, G3.2
+
+Hình thức thực hiện        Thực hiện nhóm tại nhà
+
+                           Báo cáo đồ án (30%), thuyết trình trước lớp (20%), demo chương trình
+Hình thức đánh giá
+                           (50%)
+
+Quy mô nhóm                Từ 4 đến 6 sinh viên (theo phân chia của giảng viên đứng lớp)
+
+Thời điểm báo cáo          Theo lịch báo cáo do giảng viên công bố
+
+Căn cứ đánh giá            “Thuyết minh đề tài” đã được duyệt tại Bài thực hành 3
+
+                           Google Chrome, Microsoft Office, Visual Studio Code, PyCharm, Sublime
+Phần mềm hỗ trợ
+                           Text, Google Colab, Microsoft Azure
+
+
+
+
+                                Hướng dẫn Đồ án môn học | Trang 1/8
+                                                                          DS317 – Khai phá dữ liệu trong doanh nghiệp
+
+1. MỤC TIÊU VÀ YÊU CẦU CHUNG
+
+1.1. Mục tiêu
+Đồ án môn học là hoạt động tổng hợp, yêu cầu nhóm triển khai trọn vẹn một dự án khai phá dữ
+liệu cho doanh nghiệp, từ dữ liệu thô đến sản phẩm hỗ trợ ra quyết định. Sau khi hoàn thành, sinh
+viên có khả năng:
+     – Áp dụng đầy đủ quy trình khám phá tri thức: tìm hiểu nghiệp vụ, tìm hiểu dữ liệu, chuẩn bị
+       dữ liệu, mô hình hóa, đánh giá và triển khai.
+     – Lựa chọn, cài đặt và tinh chỉnh các phương pháp máy học phù hợp với bài toán đã phát biểu.
+     – Đánh giá và phân tích kết quả bằng cả độ đo kỹ thuật và độ đo giá trị nghiệp vụ.
+     – Xây dựng chương trình demo minh họa cách doanh nghiệp sử dụng kết quả khai phá dữ liệu.
+     – Viết báo cáo chuyên nghiệp và thuyết trình, bảo vệ kết quả trước lớp.
+
+1.2. Nguyên tắc xuyên suốt
+
+ BA NGUYÊN TẮC BẮT BUỘC
+ Đồ án phải bám sát “Thuyết minh đề tài” đã được duyệt. Mọi thay đổi về bài toán, dữ liệu hoặc phạm vi
+ đều phải được giảng viên chấp thuận và ghi nhận trong phần “Nhật ký thay đổi” của báo cáo.
+ Mọi kết luận trong báo cáo phải có minh chứng: bảng số liệu, biểu đồ hoặc kết quả chạy thực tế tái lập
+ được từ mã nguồn nộp kèm.
+ Mọi thành viên đều phải nắm được toàn bộ nội dung đề tài, không chỉ phần mình phụ trách. Giảng viên
+ có quyền hỏi bất kỳ thành viên nào về bất kỳ phần nào của đồ án.
+
+
+2. PHẠM VI CÔNG VIỆC BẮT BUỘC
+Đồ án phải hoàn thành đầy đủ bảy hạng mục dưới đây. Thiếu bất kỳ hạng mục nào sẽ bị trừ điểm
+tương ứng ở phần báo cáo và demo.
+
+  STT               Hạng mục                                            Yêu cầu cụ thể
+
+                                            Thu thập đầy đủ dữ liệu theo thuyết minh; xây dựng từ điển dữ liệu;
+                                            đánh giá chất lượng dữ liệu theo các chiều đầy đủ, nhất quán, chính
+ 1          Hoàn thiện dữ liệu
+                                            xác, kịp thời, hợp lệ và duy nhất; lập ground truth nếu nhãn chưa
+                                            sẵn có.
+
+                                            Cài đặt quy trình xử lý giá trị thiếu, trùng lặp, mâu thuẫn, ngoại lai;
+            Tiền xử lý và kỹ thuật đặc      chuẩn hóa và mã hóa; xây dựng đặc trưng mới có lập luận nghiệp
+ 2
+            trưng                           vụ; xử lý mất cân bằng lớp nếu có. Toàn bộ quy trình phải tự động
+                                            và tái lập được bằng mã nguồn.
+
+                                            Thống kê mô tả và trực quan hóa đủ để rút ra nhận định nghiệp vụ;
+ 3          Phân tích và trực quan hóa
+                                            phân tích tương quan và mức độ quan trọng của thuộc tính.
+
+
+
+
+                                         Hướng dẫn Đồ án môn học | Trang 2/8
+                                                                       DS317 – Khai phá dữ liệu trong doanh nghiệp
+
+
+  STT            Hạng mục                                            Yêu cầu cụ thể
+
+                                         Cài đặt tối thiểu ba phương pháp, trong đó bắt buộc có một mô hình
+ 4        Mô hình hóa                    cơ sở (baseline). Thực hiện tinh chỉnh siêu tham số và ghi lại cấu
+                                         hình tốt nhất.
+
+                                         So sánh các mô hình bằng bảng độ đo; phân tích lỗi trên các trường
+          Đánh giá và phân tích kết
+ 5                                       hợp dự đoán sai; kiểm tra tính ổn định của kết quả; quy đổi sang độ
+          quả
+                                         đo nghiệp vụ; đối chiếu với ngưỡng chấp nhận đã cam kết.
+
+                                         Xây dựng chương trình cho phép người dùng nhập hoặc tải dữ liệu,
+ 6        Chương trình demo              chạy mô hình và xem kết quả dưới dạng dễ hiểu với người dùng
+                                         nghiệp vụ.
+
+                                         Đề xuất kiến trúc triển khai trong doanh nghiệp, kế hoạch giám sát
+          Phương án triển khai và
+ 7                                       chất lượng mô hình theo thời gian, cơ chế huấn luyện lại và phương
+          vận hành
+                                         án xử lý khi mô hình suy giảm hiệu năng.
+
+
+3. LỘ TRÌNH VÀ MỐC NGHIỆM THU
+Mốc thời gian dưới đây tính theo tuần kể từ khi đề tài được duyệt ở Bài thực hành 3. Giảng viên
+đứng lớp có thể điều chỉnh cho phù hợp với lịch giảng dạy thực tế.
+
+ Giai đoạn            Nội dung công việc                                Sản phẩm nghiệm thu
+
+              Chốt phạm vi, thiết lập kho mã
+                                                       Kho mã nguồn dùng chung; tập dữ liệu thô đầy đủ;
+ Tuần 1       nguồn và quy ước làm việc nhóm;
+                                                       bảng phân công chi tiết.
+              hoàn tất thu thập dữ liệu.
+
+              Hoàn thiện tiền xử lý và xây dựng
+                                                       Tập dữ liệu đã xử lý; từ điển dữ liệu; báo cáo khảo sát
+ Tuần 2       tập dữ liệu sạch; khảo sát và trực
+                                                       dữ liệu.
+              quan hóa.
+
+              Cài đặt mô hình cơ sở và thiết lập
+ Tuần 3                                                Kết quả baseline; khung đánh giá tái lập được.
+              quy trình đánh giá tự động.
+
+              Cài đặt và tinh chỉnh các mô hình
+ Tuần 4       còn lại; ghi nhận kết quả thực           Bảng so sánh mô hình; nhật ký thực nghiệm.
+              nghiệm.
+
+              Phân tích lỗi, phân tích mức độ
+                                                       Chương phân tích kết quả; kết luận về ngưỡng chấp
+ Tuần 5       quan trọng của thuộc tính, quy đổi
+                                                       nhận.
+              sang độ đo nghiệp vụ.
+
+              Xây dựng chương trình demo và đề         Chương trình demo chạy được; sơ đồ kiến trúc triển
+ Tuần 6
+              xuất phương án triển khai.               khai.
+
+              Hoàn thiện báo cáo, slides; tổng
+ Tuần 7                                                Bản báo cáo hoàn chỉnh; bộ slides; kịch bản demo.
+              duyệt nội bộ và chạy thử demo.
+
+
+
+
+                                      Hướng dẫn Đồ án môn học | Trang 3/8
+                                                                    DS317 – Khai phá dữ liệu trong doanh nghiệp
+
+
+ Giai đoạn           Nội dung công việc                              Sản phẩm nghiệm thu
+
+             Nộp hồ sơ và báo cáo trước lớp
+ Tuần 8                                             Hồ sơ nộp đầy đủ; buổi bảo vệ.
+             theo lịch.
+
+ LƯU Ý
+ Nhóm nên lưu giữ nhật ký thực nghiệm ngay từ tuần đầu: mỗi lần chạy ghi lại cấu hình, dữ liệu sử dụng,
+ kết quả và nhận xét. Đây là nguồn dữ liệu chính để viết chương kết quả, đồng thời là minh chứng cho
+ tính trung thực của đồ án.
+
+
+4. CẤU TRÚC BÁO CÁO ĐỒ ÁN
+Báo cáo dài từ 30 đến 50 trang nội dung (không tính bìa, mục lục và phụ lục), gồm các phần sau:
+
+4.1. Phần đầu
+  – Trang bìa chính và bìa phụ theo mẫu của Trường.
+  – Lời cảm ơn (không bắt buộc).
+  – Nhận xét của giảng viên (để trống).
+  – Mục lục, danh mục bảng, danh mục hình, danh mục từ viết tắt.
+  – Bảng phân công và đánh giá công việc nhóm (xem Mục 8).
+
+4.2. Nội dung chính
+
+          Chương                                           Nội dung bắt buộc
+
+                             Bối cảnh doanh nghiệp và vấn đề nghiệp vụ. Mục tiêu đề tài. Phát biểu bài
+                             toán khai phá dữ liệu theo cấu trúc “Cho trước – Cần tìm – Đầu vào – Đầu ra
+ Chương 1. Tổng quan
+                             – Ràng buộc”. Phạm vi và giới hạn. Đóng góp chính của nhóm. Bố cục báo
+                             cáo.
+
+                             Các khái niệm nền tảng sử dụng trong đồ án. Trình bày nguyên lý hoạt động
+ Chương 2. Cơ sở lý thuyết   của từng phương pháp máy học được sử dụng, kèm ưu điểm, nhược điểm và
+ và công trình liên quan     độ phức tạp. Khảo sát tối thiểu năm công trình liên quan và nêu rõ điểm khác
+                             biệt của đề tài.
+
+                             Nguồn gốc và cách thu thập dữ liệu. Từ điển dữ liệu đầy đủ. Kết quả đánh
+                             giá chất lượng dữ liệu. Quy trình tiền xử lý và kỹ thuật đặc trưng, kèm lý do
+ Chương 3. Dữ liệu
+                             cho từng quyết định. Kết quả phân tích khám phá với các biểu đồ và nhận
+                             định nghiệp vụ tương ứng.
+
+                             Kiến trúc tổng thể của giải pháp. Mô tả chi tiết từng mô hình được cài đặt,
+ Chương 4. Phương pháp
+                             tham số và chiến lược tinh chỉnh. Thiết kế kịch bản thực nghiệm: cách chia
+ đề xuất
+                             dữ liệu, quy trình huấn luyện, công cụ và môi trường thực nghiệm.
+
+                             Bảng so sánh các mô hình theo toàn bộ độ đo đã cam kết. Trực quan hóa kết
+ Chương 5. Kết quả thực
+                             quả. Phân tích lỗi trên các trường hợp dự đoán sai. Phân tích mức độ quan
+ nghiệm và bàn luận
+                             trọng của thuộc tính và khả năng giải thích của mô hình. Quy đổi kết quả
+
+
+                                   Hướng dẫn Đồ án môn học | Trang 4/8
+                                                                  DS317 – Khai phá dữ liệu trong doanh nghiệp
+
+
+           Chương                                        Nội dung bắt buộc
+
+                           sang giá trị nghiệp vụ. Đối chiếu với ngưỡng chấp nhận đã cam kết trong
+                           thuyết minh.
+
+                           Mô tả chương trình demo: chức năng, giao diện, luồng sử dụng. Kiến trúc
+ Chương 6. Ứng dụng và     triển khai đề xuất trong môi trường doanh nghiệp. Kế hoạch giám sát, bảo trì
+ triển khai                và huấn luyện lại mô hình. Phân tích rủi ro khi đưa vào vận hành, bao gồm cả
+                           vấn đề thiên lệch và quyền riêng tư.
+
+ Chương 7. Kết luận và     Tóm tắt kết quả đạt được, đối chiếu với từng mục tiêu đã đặt ra. Nêu rõ hạn
+ hướng phát triển          chế còn tồn tại. Đề xuất hướng phát triển tiếp theo.
+
+4.3. Phần cuối
+  – Tài liệu tham khảo: tối thiểu 10 tài liệu, trình bày theo chuẩn IEEE hoặc APA, trích dẫn nhất
+    quán trong toàn báo cáo.
+  – Phụ lục: hướng dẫn cài đặt và chạy chương trình, mô tả cấu trúc mã nguồn, nhật ký thực
+    nghiệm, nhật ký thay đổi so với thuyết minh đề tài.
+
+4.4. Quy định trình bày
+
+             Yếu tố                                           Quy định
+
+ Khổ giấy và lề            A4; lề trái 3 cm, lề phải 2 cm, lề trên 2 cm, lề dưới 2 cm.
+
+ Phông chữ                 Times New Roman, cỡ 13, giãn dòng 1,5; căn đều hai bên.
+
+ Đánh số                   Đánh số trang liên tục; đánh số chương, mục theo cấp (1, 1.1, 1.1.1).
+
+                           Đánh số theo chương; bảng ghi tiêu đề phía trên, hình ghi tiêu đề phía dưới;
+ Bảng và hình
+                           mọi bảng và hình phải được viện dẫn trong phần nội dung.
+
+ Công thức                 Đánh số ở lề phải; giải thích đầy đủ các ký hiệu.
+
+                           Mọi nội dung lấy từ nguồn khác đều phải trích dẫn; không sao chép nguyên
+ Trích dẫn
+                           văn quá một câu ngắn.
+
+ Định dạng nộp             Nộp cả bản PDF và bản DOCX.
+
+
+5. YÊU CẦU ĐỐI VỚI CHƯƠNG TRÌNH DEMO
+Demo chiếm 50% điểm đồ án, là hạng mục có trọng số cao nhất. Chương trình cần thể hiện được
+giá trị của kết quả khai phá dữ liệu đối với người dùng nghiệp vụ, không chỉ là một tệp mã nguồn
+chạy tuần tự.
+
+5.1. Yêu cầu về chức năng
+
+
+
+
+                                 Hướng dẫn Đồ án môn học | Trang 5/8
+                                                                       DS317 – Khai phá dữ liệu trong doanh nghiệp
+
+
+       Mức                         Chức năng                                          Ghi chú
+
+                  Nạp dữ liệu đầu vào (tải tệp hoặc nhập trực
+                                                                    Phải dùng chính mô hình đã huấn luyện
+ Bắt buộc         tiếp) và thực hiện tiền xử lý tương ứng với
+                                                                    trong đồ án, không dùng kết quả cố định.
+                  quy trình huấn luyện.
+
+                  Chạy mô hình và hiển thị kết quả dự đoán,
+                                                                    Kết quả trình bày dưới dạng bảng và biểu
+ Bắt buộc         phân cụm, luật kết hợp hoặc dự báo tùy theo
+                                                                    đồ dễ hiểu.
+                  bài toán.
+
+                  Hiển thị các độ đo đánh giá trên tập kiểm
+ Bắt buộc                                                           Số liệu phải trùng khớp với báo cáo.
+                  thử.
+
+                  Diễn giải kết quả theo ngôn ngữ nghiệp vụ,
+                                                                    Đây là điểm phân biệt giữa một bài tập và
+ Bắt buộc         ví dụ danh sách đối tượng cần ưu tiên xử lý
+                                                                    một giải pháp cho doanh nghiệp.
+                  kèm lý do.
+
+ Khuyến           Bảng điều khiển trực quan cho phép lọc, sắp       Có thể dùng Streamlit, Dash, Power BI
+ khích            xếp và xuất báo cáo.                              hoặc ứng dụng web.
+
+ Khuyến           Cho phép điều chỉnh tham số và quan sát tác       Ví dụ thay đổi ngưỡng phân loại và xem
+ khích            động lên kết quả.                                 đánh đổi giữa Precision và Recall.
+
+ Khuyến           Triển khai lên môi trường đám mây hoặc            Phù hợp với nội dung Chương 2 và
+ khích            đóng gói bằng container.                          Chương 11 của phần lý thuyết.
+
+5.2. Yêu cầu về kỹ thuật
+     – Mã nguồn tổ chức theo thư mục rõ ràng, có tệp README hướng dẫn cài đặt và chạy.
+     – Khai báo đầy đủ thư viện phụ thuộc và phiên bản (requirements.txt hoặc tương đương).
+     – Cố định hạt giống ngẫu nhiên để kết quả tái lập được.
+     – Không để lộ khóa truy cập, mật khẩu hay dữ liệu cá nhân trong mã nguồn.
+     – Thời gian khởi động và chạy một lượt demo không vượt quá 3 phút.
+     – Chuẩn bị phương án dự phòng: bản ghi màn hình toàn bộ demo, dùng khi gặp sự cố kỹ thuật
+       tại buổi báo cáo.
+
+6. YÊU CẦU ĐỐI VỚI THUYẾT TRÌNH
+
+6.1. Bố cục slides
+
+     Thứ tự                    Nội dung                                         Số slide gợi ý
+
+                Trang bìa: tên đề tài, nhóm, thành viên,
+ 1                                                          1
+                giảng viên hướng dẫn.
+
+                Bối cảnh doanh nghiệp và vấn đề nghiệp
+ 2                                                     2
+                vụ.
+
+ 3              Phát biểu bài toán và mục tiêu.             1–2
+
+                                      Hướng dẫn Đồ án môn học | Trang 6/8
+                                                                       DS317 – Khai phá dữ liệu trong doanh nghiệp
+
+
+     Thứ tự                     Nội dung                                        Số slide gợi ý
+
+                 Dữ liệu: nguồn, quy mô, chất lượng,
+ 4                                                          2–3
+                 những phát hiện đáng chú ý.
+
+                 Phương pháp: kiến trúc giải pháp và các
+ 5                                                          2–3
+                 mô hình sử dụng.
+
+                 Kết quả: bảng so sánh, biểu đồ, phân
+ 6                                                          3–4
+                 tích lỗi.
+
+                 Giá trị nghiệp vụ và phương án triển
+ 7                                                          2
+                 khai.
+
+ 8               Demo chương trình.                         1 (chuyển sang chạy thật)
+
+ 9               Kết luận, hạn chế và hướng phát triển.     1–2
+
+ 10              Phân công công việc nhóm.                  1
+
+6.2. Quy định trình bày
+     – Tất cả thành viên đều phải tham gia trình bày, mỗi người phụ trách một phần nội dung.
+     – Slides ưu tiên hình ảnh, sơ đồ và bảng số liệu; hạn chế trình bày đoạn văn dài.
+     – Mọi số liệu trên slides phải nhất quán với báo cáo và với kết quả chạy demo.
+     – Chuẩn bị trước các câu hỏi dự kiến: vì sao chọn phương pháp này, vì sao chọn độ đo này, kết
+       quả có đáng tin không, doanh nghiệp được lợi gì.
+
+7. HỒ SƠ NỘP
+Cấu trúc thư mục như sau:
+
+              Thư mục / tệp                                            Nội dung
+
+                                       Giới thiệu đề tài, hướng dẫn cài đặt và chạy chương trình, danh sách
+ README.md
+                                       thành viên.
+
+ 01_BaoCao/                            Báo cáo đồ án ở cả hai định dạng PDF và DOCX.
+
+ 02_Slides/                            Bộ slides thuyết trình (PDF và PPTX).
+
+                                       Toàn bộ mã nguồn: tiền xử lý, huấn luyện, đánh giá và chương trình
+ 03_SourceCode/
+                                       demo; kèm tệp khai báo thư viện phụ thuộc.
+
+                                       Dữ liệu mẫu đủ để chạy demo. Dữ liệu dung lượng lớn cung cấp qua
+ 04_Data/
+                                       liên kết tải kèm hướng dẫn trong README.
+
+ 05_Model/                             Các mô hình đã huấn luyện được lưu lại.
+
+ 06_Results/                           Bảng kết quả thực nghiệm, biểu đồ, nhật ký thực nghiệm.
+
+
+
+                                      Hướng dẫn Đồ án môn học | Trang 7/8
+                                                                    DS317 – Khai phá dữ liệu trong doanh nghiệp
+
+
+         Thư mục / tệp                                              Nội dung
+
+07_Demo/                            Bản ghi màn hình demo (video dự phòng) và kịch bản demo.
+
+                                    Thuyết minh đề tài đã duyệt, bảng phân công và đánh giá công việc
+08_QuanLyNhom/
+                                    nhóm, biên bản họp nhóm.
+
+ LƯU Ý
+ Hồ sơ nộp thiếu mã nguồn hoặc mã nguồn không chạy được sẽ khiến phần demo bị đánh giá ở mức thấp
+ nhất, bất kể báo cáo trình bày tốt đến đâu.
+ Thời hạn nộp theo lịch báo cáo do giảng viên công bố. Nộp trễ bị trừ điểm theo quy định của lớp.
+
+
+8. LIÊM CHÍNH HỌC THUẬT VÀ SỬ DỤNG CÔNG CỤ HỖ TRỢ
+ – Nhóm chịu trách nhiệm về tính trung thực của toàn bộ số liệu báo cáo. Kết quả phải tái lập
+   được từ mã nguồn nộp kèm; số liệu bịa đặt hoặc chỉnh sửa sẽ dẫn đến điểm 0 cho thành phần
+   A4.
+ – Mọi nội dung, hình ảnh, đoạn mã lấy từ nguồn khác đều phải ghi rõ nguồn. Sao chép không
+   trích dẫn được xử lý theo quy định về đạo văn của Trường.
+ – Không sử dụng lại đồ án của nhóm khác hoặc của các khóa trước.
+ – Được phép sử dụng thư viện mã nguồn mở và công cụ hỗ trợ trí tuệ nhân tạo cho các công
+   việc phụ trợ, với điều kiện ghi rõ trong phụ lục: công cụ nào, dùng cho phần nào và nhóm đã
+   kiểm chứng kết quả ra sao. Nhóm phải hiểu và giải thích được mọi dòng mã trong sản phẩm
+   của mình.
+ – Dữ liệu cá nhân phải được ẩn danh trước khi đưa vào báo cáo hoặc demo.
+
+
+
+
+                                   Hướng dẫn Đồ án môn học | Trang 8/8
+
