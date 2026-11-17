@@ -1,35 +1,61 @@
-# ---- Large data files (stay local) ----
-data/
-output/
-parquet/
-venv/
-.ruff_cache/
-.tmp_duckdb/
-*.duckdb
-*.duckdb.wal
+# Local Freddie Mac inputs and generated outputs
+/data/
+/parquet/
+/output/
 *.parquet
-*.csv
+*.duckdb
+*.duckdb.*
 *.pkl
 *.pickle
+*.joblib
 *.h5
 *.hdf5
 *.feather
 *.arrow
 *.zip
+*.log
 
-# ---- PDFs (course material, kept out of git) ----
-docs_md/
-docs/*.pdf
-*.pdf
-
-# ---- Python ----
+# Environments, caches, temporary work and agent state
+/venv/
+/.venv/
+/.slim/
+/.agents/
+/.codex/
+/.duckdb_tmp/
+/.tmp_duckdb/
+/.label_tmp/
+/.fifo_work/
+/.ruff_cache/
 __pycache__/
 *.py[cod]
 .ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
 
-# ---- Editor / OS ----
+# Credentials and machine settings
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials*.json
+/.vscode/
+/.idea/
 .DS_Store
 Thumbs.db
 
-# ---- Keep the small team artifacts that happen to be CSV ----
-!Team2/*.csv
+# Local course/reference material and retired exploration
+*.pdf
+*.docx
+/docs_md/
+/ThucHanh/
+/Team2/
+/EDA/
+/Report/
+/SOTA/
+/docs/AUDIT_*.md
+/docs/NEXT_AGENT_*.md
+/docs/REVIEW_*.md
+/docs/TEAM_HANDOFF_*.md
+/scripts/output/
+/scripts/model/train_pilot.py

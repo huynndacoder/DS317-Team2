@@ -77,6 +77,9 @@ import shutil
 import time
 from pathlib import Path
 
+import hashlib
+import os
+
 import duckdb
 import matplotlib
 matplotlib.use("Agg")
@@ -91,9 +94,44 @@ OUT_DATA = OUT / "data"        # CSV kết quả
 OUT_FIG = OUT / "figures"      # biểu đồ
 OUT_CACHE = OUT / "cache"      # cache từng quý (resumable)
 # Tmp dir của DuckDB phải nằm trên ĐĨA (/tmp là tmpfs - RAM-backed, không được dùng)
-TMP_DIR = ROOT / ".duckdb_tmp"
+TMP_DIR = Path(os.environ.get("DQ_TMP_DIR", ROOT / ".duckdb_tmp"))
 
-NEWEST_PERIOD = 202603  # tháng báo cáo mới nhất có sẵn trong dữ liệu
+# ---------------------------------------------------------------------------
+# Tham số hạ tầng — đọc từ biến môi trường để chạy được trên máy khác cấu hình.
+# Mặc định an toàn cho máy 15 GB RAM (file perf lớn nhất 7,5 GB).
+# ---------------------------------------------------------------------------
+MEMORY_LIMIT = os.environ.get("DQ_MEMORY_LIMIT", "3GB")
+THREADS = int(os.environ.get("DQ_THREADS", "2"))
+# Bật để bỏ qua cache và tính lại toàn bộ (dùng khi kiểm chứng tái lập).
+FORCE_RECOMPUTE = os.environ.get("DQ_FORCE_RECOMPUTE", "0") == "1"
+
+# ---------------------------------------------------------------------------
+# QUARTERS và NEWEST_PERIOD suy ra từ DỮ LIỆU CÓ THẬT trên đĩa, không viết tay.
+# Thêm quý mới vào data/ là notebook tự nhận, không phải sửa code.
+# ---------------------------------------------------------------------------
+def discover_quarters(data_dir: Path = DATA_DIR) -> list:
+    """Quét data/historical_data_<YEAR>/historical_data_<YEAR>Q<n>/ và trả về
+    danh sách quý đã sắp xếp, chỉ gồm quý có ĐỦ cả orig_*.txt và perf_*.txt."""
+    found = []
+    for year_dir in sorted(data_dir.glob("historical_data_*")):
+        for q_dir in sorted(year_dir.glob("historical_data_*Q*")):
+            q = q_dir.name.replace("historical_data_", "")
+            if (q_dir / f"orig_{q}.txt").exists() and (q_dir / f"perf_{q}.txt").exists():
+                found.append(q)
+    if not found:
+        raise FileNotFoundError(
+            f"Không tìm thấy cặp orig_*/perf_*.txt nào trong {data_dir}. "
+            "Chạy scripts/extract_historical_data.py trước."
+        )
+    return sorted(set(found), key=lambda s: (int(s[:4]), int(s[-1])))
+
+
+QUARTERS = discover_quarters()
+
+# Mốc "mới nhất" để tính timeliness = tháng báo cáo lớn nhất có trong tên quý.
+# (Quý cuối cùng của dữ liệu: 2026Q1 -> 202603.) Suy ra từ QUARTERS, không viết tay.
+_last = QUARTERS[-1]
+NEWEST_PERIOD = int(_last[:4]) * 100 + int(_last[-1]) * 3
 
 # 31 cột file orig — ánh xạ theo file_layout.xlsx chính thức (32 vị trí) + thay đổi
 # của Release 47: BỎ "MI Cancellation Indicator" + "Servicer Name", THÊM "VantageScore4".
@@ -134,7 +172,7 @@ ORIG_TYPES = {c: 'VARCHAR' for c in ORIG_COLUMNS}
 PERF_TYPES = {c: 'VARCHAR' for c in PERF_COLUMNS}
 
 # Thứ tự 25 quý (cũng dùng cho split 8:1:1 theo quý)
-QUARTERS = [f"{y}Q{q}" for y in range(2020, 2027) for q in (1, 2, 3, 4)][:25]
+# QUARTERS đã được suy ra từ dữ liệu ở phần cấu hình phía trên (discover_quarters).
 
 VALID_ZERO_BALANCE_CODES = None  # deprecated: miền ZBC nay là range 1-998 (999 = Not Available)
 
@@ -354,15 +392,47 @@ def metrics_perf(con, quarter: str) -> dict:
     return d
 
 
-def run_all_quarters(con) -> pd.DataFrame:
-    """Chạy metric cho 25 quý — CÓ CACHE theo quý (output/cache/dq_metrics_<q>.csv):
-    quý đã có file cache thì load lại thay vì quét lại → chạy resume được."""
+def rules_fingerprint() -> str:
+    """Hash của mọi thứ ảnh hưởng đến KẾT QUẢ metric: từ điển (tên cột + quy tắc),
+    danh sách quý, mốc NEWEST_PERIOD và phiên bản DuckDB.
+
+    Cache chỉ được dùng lại khi fingerprint khớp. Nhờ đó sửa quy tắc rồi chạy lại
+    sẽ TỰ ĐỘNG tính lại, không trả về số cũ một cách âm thầm."""
+    payload = "|".join([
+        repr(DICT_ROWS),
+        repr(QUARTERS),
+        str(NEWEST_PERIOD),
+        duckdb.__version__,
+    ])
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
+
+
+def run_all_quarters(con, force: bool = False) -> pd.DataFrame:
+    """Chạy metric cho các quý — CÓ CACHE theo quý (output/cache/dq_metrics_<q>.csv).
+
+    Cache hợp lệ chỉ khi fingerprint quy tắc khớp (xem rules_fingerprint). Đặt
+    DQ_FORCE_RECOMPUTE=1 hoặc gọi với force=True để bỏ qua cache hoàn toàn."""
     cache_dir = OUT_CACHE
     cache_dir.mkdir(parents=True, exist_ok=True)
+    fp = rules_fingerprint()
+    fp_file = cache_dir / "_fingerprint.txt"
+
+    cached_fp = fp_file.read_text().strip() if fp_file.exists() else None
+    if force or FORCE_RECOMPUTE or cached_fp != fp:
+        if cached_fp is not None and cached_fp != fp and not force:
+            print(f"  Quy tắc đã thay đổi (fingerprint {cached_fp} -> {fp}) "
+                  f"— bỏ toàn bộ cache, tính lại.")
+        for old in cache_dir.glob("dq_metrics_*.csv"):
+            old.unlink()
+        fp_file.write_text(fp)
+        use_cache = False
+    else:
+        use_cache = True
+
     rows = []
     for q in QUARTERS:
         cache_path = cache_dir / f"dq_metrics_{q}.csv"
-        if cache_path.exists():
+        if use_cache and cache_path.exists():
             cached = pd.read_csv(cache_path)
             rows.extend(cached.to_dict('records'))
             print(f"  {q}: dùng cache ({cache_path.name})")
@@ -374,8 +444,11 @@ def run_all_quarters(con) -> pd.DataFrame:
         except duckdb.OutOfMemoryException:
             print(f"  {q}: OOM — giảm threads=1 rồi thử lại...")
             con.execute("SET threads=1;")
-            mo = metrics_orig(con, q)
-            mp = metrics_perf(con, q)
+            try:
+                mo = metrics_orig(con, q)
+                mp = metrics_perf(con, q)
+            finally:
+                con.execute(f"SET threads={THREADS};")
         q_rows = []
         for source, m in (('orig', mo), ('perf', mp)):
             q_rows.append({
@@ -600,9 +673,8 @@ def diagnostic_plane(con) -> pd.DataFrame:
             ('Nguy hiểm', 0.02, 0.02, 'left', 'bottom')):
         ax.text(tx, ty, label, fontsize=10, style='italic', color='gray',
                 ha=ha, va=va)
-    # Ghi chú vài quý đại diện: đầu (2020Q1), giữa (2023Q1),
-    # cuối (2026Q1 — nơi giá trị 'XX' bùng phát)
-    for q in ('2020Q1', '2023Q1', '2026Q1'):
+    # Ghi chú vài quý đại diện: đầu, giữa, cuối — suy ra từ dữ liệu, không viết tay
+    for q in (QUARTERS[0], QUARTERS[len(QUARTERS) // 2], QUARTERS[-1]):
         sub = plane[plane['quarter'] == q]
         for _, r in sub.iterrows():
             ax.annotate(q, (r['ssan'], r['sperf']), fontsize=8,
@@ -632,10 +704,10 @@ def main():
     con = duckdb.connect()
     con.execute(f"SET temp_directory='{TMP_DIR}';")
     con.execute("SET preserve_insertion_order=false;")
-    con.execute("SET memory_limit='3GB';")
+    con.execute(f"SET memory_limit='{MEMORY_LIMIT}';")
     # Giới hạn số luồng: cửa sổ (window) trên ~70M dòng tốn RAM theo luồng;
     # máy chỉ có 15GB và thường đã dùng ~8GB → 2 luồng tránh OOM.
-    con.execute("SET threads=2;")
+    con.execute(f"SET threads={THREADS};")
 
     # 1. Từ điển dữ liệu
     dd = pd.DataFrame(DICT_ROWS, columns=['file', 'column', 'position', 'dtype',

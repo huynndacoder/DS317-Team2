@@ -1,40 +1,85 @@
-# DS317 — Team 2
+# DS317 — Nhóm 2: nguy cơ quá hạn khoản vay mua nhà
 
-Đồ án môn học DS317: phân tích chất lượng dữ liệu và khai phá dữ liệu tín dụng
-(Freddie Mac Single-Family Loan-Level Dataset).
+Dùng thông tin lúc khởi tạo khoản vay **Purchase** trong Freddie Mac Single-Family
+Loan-Level Dataset để dự đoán **90+ ngày quá hạn hoặc REO trong 12 tháng đầu**,
+tính từ tháng thanh toán đầu tiên.
+
+Câu hỏi nghiên cứu tiếp theo: ảnh hưởng của cửa sổ dữ liệu huấn luyện
+(3/5/10 năm hoặc expanding) đến kết quả dự đoán ngoài thời gian.
+
+## Trạng thái
+
+- Đã xây và kiểm chứng nhãn, Gold và pilot Logistic Regression / XGBoost.
+- Gold nghiên cứu: **16.641.482 khoản eligible**, 18 baseline features.
+- Development test: cohort 2019; **holdout 2024 chưa được đánh giá**.
+- Chưa có kết quả nghiên cứu so sánh training windows hoặc tuyên bố đạt SOTA.
+- Source nhãn/Gold/model được giữ nguyên từ baseline đã audit.
+- Đây là repo source và kết quả tổng hợp; dữ liệu khoản vay, weights và predictions
+  không được phân phối trong Git.
+
+| Model | AP (2019) | ROC-AUC (2019) | Capture: top 5% từng quý |
+|---|---:|---:|---:|
+| Logistic Regression | 0,055705 | 0,704997 | 15,15% |
+| XGBoost | 0,054566 | 0,689814 | 15,82% |
+
+Đọc [phương pháp và giới hạn](reports/pilot-baseline.md) trước khi diễn giải kết quả.
+Global-ranking khác với ngân sách 5% theo quý.
+
+## Bắt đầu mà không cần dữ liệu Freddie Mac
+
+Môi trường baseline được kiểm chứng trên Python **3.14.8**; dependencies hiện tại
+yêu cầu Python **>=3.12**.
+
+```bash
+python3.14 -m venv venv
+./venv/bin/python -m pip install -r requirements.txt
+make test
+```
+
+`make test` chỉ chạy label logic và model/package tests bằng fixtures synthetic.
+Không tải dữ liệu, không train trên dữ liệu thật và không mở holdout.
+Có thể dùng interpreter khác bằng `make test PYTHON=python`.
 
 ## Cấu trúc
 
-| Thư mục | Nội dung |
-|---|---|
-| `scripts/` | Pipeline Python: trích xuất dữ liệu, dựng warehouse DuckDB, tính 6 khía cạnh chất lượng dữ liệu, xuất Parquet |
-| `notebooks/` | Notebook bài tập chất lượng dữ liệu |
-| `ThucHanh/` | Notebook thực hành trên lớp |
-| `Team2/` | Khảo sát tài liệu, lựa chọn dataset, phân công thành viên |
-| `docs/` | Tài liệu môn học (markdown; PDF không đưa vào git) |
-
-## Pipeline
-
-```bash
-# 1. Giải nén dữ liệu gốc vào data/historical_data_<YEAR>/
-python scripts/extract_historical_data.py
-python scripts/verify_extraction.py
-
-# 2. Dựng warehouse DuckDB (silver layer, đã định kiểu)
-python scripts/build_warehouse.py
-
-# 3. Tính 6 khía cạnh chất lượng dữ liệu
-bash scripts/run_6_dimensions.sh
-
-# 4. Xuất Parquet phân vùng theo quý
-python scripts/export_parquet.py
+```text
+configs/                 Cấu hình pilot
+scripts/ingest_stream.py  Zip → Parquet, không ghi toàn bộ TXT ra đĩa
+scripts/label/           Profiling, nhãn 12 tháng và kiểm chứng
+scripts/gold/            Feature contract, Purchase Gold và membership
+scripts/model/           Training pilot, evaluator, verifier và package checker
+scripts/dq_core.py       DQ coursework cũ; xem giới hạn bên dưới
+notebooks/               EDA/DQ source, đã bỏ outputs
+docs/                    Data contract, tái lập và trạng thái nghiên cứu
+reports/                 Chỉ kết quả tổng hợp, không có loan-level rows
 ```
 
-## Yêu cầu
+## Tài liệu
 
-Python 3.11+, `duckdb`, `pandas`, `matplotlib`, `openpyxl`.
+- [Data contract](docs/data-contract.md)
+- [Quy tắc nhãn chi tiết](docs/label_rules.md)
+- [Chạy pipeline và kiểm chứng](docs/reproducibility.md)
+- [Trạng thái và công việc tiếp theo](docs/project-status.md)
+- [Chính sách repo public/local](docs/repository-layout.md)
 
-## Dữ liệu
+## Dữ liệu và tài nguyên local
 
-`data/`, `parquet/`, `output/` và `warehouse.duckdb` **không** được commit
-(xem `.gitignore`) — tổng dung lượng ~80 GB. Liên hệ nhóm để lấy dữ liệu gốc.
+Đăng ký/tải dữ liệu trực tiếp tại
+[Freddie Mac SFLLD](https://claritydownload.fmapps.freddiemac.com/CRT/#/sflld)
+theo điều kiện của nhà cung cấp. Không có tài khoản, token hoặc dữ liệu thô trong repo.
+
+Pipeline thật cần `parquet/` và `output/` local. Xem tài liệu tái lập trước khi chạy:
+build nhãn/Gold và training là tác vụ nặng, khác với synthetic tests.
+Trên máy dùng chung chỉ chạy một heavy training process tại một thời điểm.
+
+## DQ và notebook
+
+Sáu chiều CLDL: **Completeness, Validity, Uniqueness, Consistency, Accuracy,
+Timeliness**. Các chỉ số delinquency/prepayment/UPB là chỉ số tín dụng.
+
+Notebook và `dq_core.py` giữ lại phần khám phá/coursework để nhóm tiếp tục làm việc.
+Một số phần dùng TXT layout cũ, proxy cho accuracy/timeliness và diagnostic plane
+chuyển thể. Chúng chưa phải kết quả DQ đã nghiệm thu cho Purchase Gold và
+**không phải triển khai AccTEMPO nguyên bản**.
+Notebook performance cũ có horizon khám phá riêng; production label tuân theo
+data contract 12 tháng. Không dùng notebook để thay quy tắc nhãn.

@@ -1,14 +1,16 @@
-# Large data files - prevent indexing by coding tools
-data/
-output/
-venv/
-.ruff_cache/
+# Keep local data and runtime state out of coding-tool indexing.
+/data/
+/parquet/
+/output/
+/venv/
+/.venv/
+/.slim/
+/.duckdb_tmp/
+/.tmp_duckdb/
+/.label_tmp/
+/.fifo_work/
+*.duckdb
 *.parquet
-*.csv
 *.pkl
 *.pickle
-*.h5
-*.hdf5
-*.feather
-*.arrow
 __pycache__/
