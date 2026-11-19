@@ -1,5 +1,5 @@
 """
-tests_pilot_repair.py — Known-answer tests for A1 (convergence checker),
+tests_baseline.py — Known-answer tests for A1 (convergence checker),
 A5 (evaluator), plus verifier negative-test fixtures.
 
 Chạy độc lập, không train dữ liệu thật, không đụng artifacts gốc.
@@ -18,7 +18,7 @@ import pandas as pd
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import train_pilot_corrected as tr
+import train_baseline as tr
 
 
 def run_convergence_tests():
@@ -205,7 +205,7 @@ def run_smoke_evaluator_test():
 def run_verifier_negative_tests():
     tests = []
     import importlib
-    vp = importlib.import_module("verify_pilot_run")
+    vp = importlib.import_module("verify_baseline")
     metric_is_bad = vp._metric_is_bad
     compare_metrics = vp.compare_metrics
     METRIC_COLS = list(vp.METRIC_ALIASES.values())
@@ -271,10 +271,10 @@ def run_verifier_negative_tests():
 
 
 def run_production_path_regression_tests():
-    """C1/C2/C3 regression tests qua production helper trong verify_pilot_run.
+    """C1/C2/C3 regression tests qua production helper trong verify_baseline.
     Không gọi trainer main; chỉ gọi compare_quarterly / compare_metrics (các hàm CLI verifier dùng)."""
     import importlib
-    vp = importlib.import_module("verify_pilot_run")
+    vp = importlib.import_module("verify_baseline")
     compare_quarterly = vp.compare_quarterly
     compare_metrics = vp.compare_metrics
     METRIC_COLS = list(vp.METRIC_ALIASES.values())
@@ -376,7 +376,7 @@ def run_production_path_regression_tests():
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--config", default="configs/pilot_baseline.yaml")
+    ap.add_argument("--config", default="configs/baseline.yaml")
     ap.add_argument("--output-dir", required=True)
     args = ap.parse_args()
 

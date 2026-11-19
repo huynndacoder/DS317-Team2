@@ -15,7 +15,7 @@ from sklearn.metrics import brier_score_loss, log_loss
 
 import generate_handoff_package as gp
 import check_handoff_package as cp
-import verify_pilot_run as vp
+import verify_baseline as vp
 
 
 def fixture(root):
@@ -70,7 +70,7 @@ def fixture(root):
 
     def runner(argv, **kwargs):
         out = Path(argv[argv.index("--output-dir")+1])
-        if "tests_pilot_repair.py" in argv[1]:
+        if "tests_baseline.py" in argv[1]:
             gp.write_json(out/"convergence_evaluator_tests.json", dict(groups={"fixture":dict(tests=[dict(name="synthetic fixture", **{"pass":True})], passed=1, failed=0)},
                           overall_passed=True, total_tests_passed=1, total_tests_failed=0))
         else:
@@ -120,9 +120,9 @@ def run_package_tests():
     t("model float32 preservation uses existing verifier tolerance, not baseline tolerance",
       cp.saved_model_metric_matches(.012939495285946997, .012939495965838432) and
       not cp.close(.012939495285946997, .012939495965838432) and not cp.saved_model_metric_matches(.01,.02))
-    sample_report = "historical log: train_pilot_corrected\n## Verify-only commands\npython scripts/model/check_handoff_package.py --package-dir /fixture\n"
+    sample_report = "historical log: train_baseline\n## Verify-only commands\npython scripts/model/check_handoff_package.py --package-dir /fixture\n"
     t("verify-only checks command section, not historical log source names", cp.verify_only_commands_valid(sample_report, Path('/fixture')))
-    t("verify-only rejects actual training command", not cp.verify_only_commands_valid(sample_report+'python train_pilot_corrected.py\n', Path('/fixture')))
+    t("verify-only rejects actual training command", not cp.verify_only_commands_valid(sample_report+'python train_baseline.py\n', Path('/fixture')))
 
     base = dict(model="lr", stage="A", cohort="Q", n=1000, n_pos=10, k=50, tp_selected=5, prevalence=.01,
                 selected_fraction=.05, precision_at_k=.1, capture_at_k=.5, lift_at_k=10., roc_auc=.7)
@@ -166,7 +166,7 @@ def run_package_tests():
             for mode in ("exit77", "missing", "malformed", "declares_failure"):
                 target = root/(child+"_"+mode)
                 def bad_runner(argv, child=child, mode=mode, **kwargs):
-                    is_target = ("tests_pilot_repair.py" in argv[1]) == (child=="tests")
+                    is_target = ("tests_baseline.py" in argv[1]) == (child=="tests")
                     if not is_target:
                         return good_runner(argv, **kwargs)
                     if mode=="exit77":
@@ -197,19 +197,19 @@ def run_package_tests():
                 t(name, not checked["all_ok"] and (not semantic_id or any(c["check_id"]==semantic_id for c in bad)), bad)
             finally:
                 p.write_bytes(original)
-        for rel in ("REPORT_CORRECTED.md", "audit_manifest.json", "metrics/pooled_corrected.csv"):
+        for rel in ("REPORT.md", "audit_manifest.json", "metrics/pooled.csv"):
             mutate_test("H4 missing "+rel, rel, lambda p:p.unlink(), "required_nonempty")
             mutate_test("H4 zero-byte "+rel, rel, lambda p:p.write_text(''), "required_nonempty")
         mutate_test("H4 malformed JSON", "audit_manifest.json", lambda p:p.write_text('{'), "evidence_schema")
-        mutate_test("H4 modified report hash", "REPORT_CORRECTED.md", lambda p:p.write_text(p.read_text()+"tamper"), "inventory_hash")
-        mutate_test("H4 modified metric hash", "metrics/pooled_corrected.csv", lambda p:p.write_text(p.read_text()+"bad"), "inventory_hash")
+        mutate_test("H4 modified report hash", "REPORT.md", lambda p:p.write_text(p.read_text()+"tamper"), "inventory_hash")
+        mutate_test("H4 modified metric hash", "metrics/pooled.csv", lambda p:p.write_text(p.read_text()+"bad"), "inventory_hash")
         def remove_inventory(p):
-            inv=gp.load_json(p); inv["files"].pop("REPORT_CORRECTED.md"); gp.write_json(p,inv)
+            inv=gp.load_json(p); inv["files"].pop("REPORT.md"); gp.write_json(p,inv)
         mutate_test("H4 missing inventory coverage", gp.INVENTORY, remove_inventory, "required_inventory_coverage")
         inv=gp.load_json(out/gp.INVENTORY)
         t("H4 inventory excludes self/gate/marker only", inv["exclusions"]==gp.EXCLUSIONS and not set(gp.EXCLUSIONS)&set(inv["files"]))
         # Wrong loss with correct p in BOTH CSVs is rejected semantically, independent of hashes.
-        originals = {rel:(out/rel).read_bytes() for rel in ("metrics/pooled_corrected.csv", "metrics/constant_baseline_by_stage.csv")}
+        originals = {rel:(out/rel).read_bytes() for rel in ("metrics/pooled.csv", "metrics/constant_baseline_by_stage.csv")}
         try:
             for rel in originals:
                 rows=gp.load_csv(out/rel)
@@ -222,7 +222,7 @@ def run_package_tests():
             t("H1 both CSV losses old formula despite correct p fail semantic gate", any(c["check_id"]=="baseline_saved_label_sklearn" and not c["pass"] for c in checked["checks"]))
         finally:
             for rel,b in originals.items(): (out/rel).write_bytes(b)
-        mutate_test("H1 one wrong CSV vs correct report/evidence", "metrics/pooled_corrected.csv",
+        mutate_test("H1 one wrong CSV vs correct report/evidence", "metrics/pooled.csv",
                     lambda p:p.write_text(p.read_text().replace(str(e['brier_constant_rate']),'.09')), "pooled_baseline")
         # Real fixture membership counts, not constants, drive SQL baseline.
         first=gp.baseline_evidence(run,gold)

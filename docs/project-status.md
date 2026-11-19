@@ -1,35 +1,30 @@
-# Trạng thái nghiên cứu và công việc tiếp theo
+# Trạng thái nghiên cứu
 
 ## Đã chốt
 
-- Ingest 110 cohorts, nhãn serious delinquency 12 tháng.
-- Purchase Gold: 16.641.482 khoản eligible, 18 features.
-- Logistic Regression và XGBoost pilot trên development cohorts2019.
-- Baseline package: 140 synthetic checks và 51 real verifier checks được ghi nhận;
-  independent package checker có 218 checks.
-- Original model/prediction artifacts được giữ nguyên.
-- Historical LR status unknown do warning capture lịch sử không đầy đủ.
-- Holdout2024 chưa đánh giá.
+- 110 cohorts, nhãn serious delinquency 12 tháng.
+- Dữ liệu Purchase eligible: 16.641.482 khoản, 18 features.
+- Baseline LR/XGBoost: refit 2012–2016, development 2019.
+- Layout hiện hành: output/research, output/baseline, output/classwork.
+- Model/preprocessor/predictions không đổi khi chuyển layout; report kiểm chứng được tạo mới.
+- Historical LR convergence unknown; không đủ warning evidence để kết luận.
+- Holdout 2024 chưa đánh giá mô hình.
+- Classwork clustering/outlier/DQ có kết quả trên mẫu 8.000+4.000, chưa có Raw+ experiment.
 
-Các con số checks là trạng thái tại mốc baseline, không phải mục tiêu cố định của mọi run.
+## Việc tiếp theo
 
-## Còn làm
+1. EDA/DQ mới theo current population/roles; xem eda-plan.md.
+2. Chốt protocol training windows 3/5/10 năm và expanding.
+3. Xây runner một development fold, sau đó mở rộng các OOT folds.
+4. Kiểm chứng làm giàu Raw/Raw+ và một cải tiến có paper bằng ablation rõ yếu tố.
+5. Đáp ứng yêu cầu tối thiểu ba phương pháp; Random Forest mới là đề xuất, chưa train.
+6. Khóa phương pháp trước final holdout; hoàn thiện demo và báo cáo.
 
-1. Chốt protocol so training windows3/5/10 năm và expanding.
-2. Kiểm runner một development fold rồi mở rộng nhiều OOT folds.
-3. Triển khai EDA/DQ mới trên Purchase/current split: population và role counts,
-   label rates, missing/domain, phân phối và drift theo cohort. Dùng nhãn 12 tháng có sẵn.
-4. Chọn một cải tiến có paper support, ví dụ recency weighting; kiểm chứng bằng ablation.
-5. Khóa phương pháp trước final holdout, làm demo và báo cáo tổng hợp.
+Dùng chung IDs/features/evaluator; không giao mỗi người một pipeline preprocessing khác nhau.
+Trên máy chung mỗi lúc chỉ một heavy process.
 
-Không cần năm pipelines cho năm teammate. Dùng chung features/IDs/evaluator;
-phân công theo EDA, DQ, runner, literature/improvement và demo.
-Trên máy chung chỉ chạy một heavy training process.
+## Giới hạn
 
-## Những giới hạn cần trình bày
-
-- Baseline hiện tại chưa phải SOTA hoặc kết quả so training windows.
-- EDA/DQ legacy đã xóa; chưa có EDA/DQ thay thế được nghiệm thu.
-- Accuracy/timeliness cần nguồn kiểm chứng hoặc ghi rõ proxy/N/A; chưa tái lập AccTEMPO.
-- Lag3 và availability của dữ liệu là giả định có giới hạn.
-- Nguồn Freddie Mac thuộc thị trường Mỹ; chưa kiểm chứng khả năng chuyển sang Việt Nam.
+Baseline chưa phải SOTA hoặc kết quả so windows; snapshot/backfill và lag 3 tháng là giả định.
+Accuracy/timeliness DQ cần reference/timestamps hoặc ghi proxy/N/A; chưa tái lập AccTEMPO.
+Freddie Mac là dữ liệu Mỹ; chưa kiểm chứng chuyển sang Việt Nam.

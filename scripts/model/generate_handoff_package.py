@@ -19,15 +19,20 @@ ROOT = Path(__file__).resolve().parents[2]
 STAGES = {"stage_A_validation": ("train_tune", "validation"),
           "stage_B_development_test": ("train_refit", "development_test")}
 SOURCES = ["scripts/model/" + x for x in (
-    "train_pilot_corrected.py", "verify_pilot_run.py", "tests_pilot_repair.py",
+    "train_baseline.py", "verify_baseline.py", "tests_baseline.py",
     "generate_handoff_package.py", "check_handoff_package.py", "tests_handoff_package.py")]
-SOURCES += ["configs/pilot_baseline.yaml"]
+SOURCES += ["configs/baseline.yaml"]
 INVENTORY = "provenance/artifact_inventory_handoff_sha256.json"
 EXCLUSIONS = [INVENTORY, "completeness_gate.json", "COMPLETE.json"]
 
 
 def now_utc():
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def portable_path(path):
+    path = Path(path).resolve()
+    return str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path)
 
 
 def sha256_file(path):
@@ -126,7 +131,7 @@ def validate_child_evidence(name, data):
         if data["total_tests_passed"] != passed or data["total_tests_failed"] != 0:
             raise ValueError("test counts inconsistent")
     else:
-        from verify_pilot_run import registry_summary
+        from verify_baseline import registry_summary
         records = data["checks"]
         summary = registry_summary(records, data["required_ids"])
         if (not records or not data["required_ids"] or not data["overall"] or
@@ -140,10 +145,10 @@ def run_children(out, run, gold, execution_id, runner=subprocess.run):
     commands = []
     for name, relative, argv in [
         ("tests", "test_results/convergence_evaluator_tests.json",
-         [sys.executable, str(ROOT / "scripts/model/tests_pilot_repair.py"),
-          "--config", str(ROOT / "configs/pilot_baseline.yaml"), "--output-dir", str(out / "test_results")]),
+         [sys.executable, str(ROOT / "scripts/model/tests_baseline.py"),
+          "--config", str(ROOT / "configs/baseline.yaml"), "--output-dir", str(out / "test_results")]),
         ("verify", "verification/verification.json",
-         [sys.executable, str(ROOT / "scripts/model/verify_pilot_run.py"),
+         [sys.executable, str(ROOT / "scripts/model/verify_baseline.py"),
           "--run-dir", str(run), "--gold-dir", str(gold), "--output-dir", str(out / "verification")]),
     ]:
         target = out / relative
@@ -204,15 +209,15 @@ def emit_metrics(out, run, evidence):
                            brier_delta=float(row["brier_global"])-e["brier_constant_rate"],
                            log_loss_model=float(row["log_loss_global"]), log_loss_constant=e["log_loss_constant_rate"],
                            log_loss_delta=float(row["log_loss_global"])-e["log_loss_constant_rate"]))
-    write_csv(out / "metrics/pooled_corrected.csv", pooled)
+    write_csv(out / "metrics/pooled.csv", pooled)
     write_csv(out / "metrics/constant_baseline_by_stage.csv", evidence)
     write_csv(out / "metrics/model_vs_constant.csv", deltas)
-    write_csv(out / "metrics/per_quarter_corrected.csv", load_csv(run / "metrics/per_quarter.csv"))
+    write_csv(out / "metrics/per_quarter.csv", load_csv(run / "metrics/per_quarter.csv"))
     return pooled, deltas
 
 
 def emit_report(out, manifest, pooled, deltas, convergence):
-    lines = ["# Pilot package correction H1–H5", "", f"Execution: {manifest['execution_id']}",
+    lines = ["# Baseline pilot — verified results", "", f"Execution: {manifest['execution_id']}",
              "Read-only saved pilot evaluation; no retrain/rebuild/holdout evaluation.",
              "", "## Main development_test: quarterly-capacity (5% per cohort)",
              "|model|selected|TP|capture|precision|lift|", "|---|---:|---:|---:|---:|---:|"]
@@ -234,10 +239,10 @@ def emit_report(out, manifest, pooled, deltas, convergence):
               "", "Final integrity outcome is in completeness_gate.json; this report is frozen before that gate.",
               "", "## Verify-only commands", "Generator already orchestrated synthetic tests then one full saved-artifact verifier.",
               "Do not repeat the full verifier merely to check the package.", "```bash",
-              f"{sys.executable} scripts/model/check_handoff_package.py --package-dir {out}",
+              f"{sys.executable} scripts/model/check_handoff_package.py --package-dir {portable_path(out)}",
               "```", "Exact executed child argv/exit codes: provenance/commands.json.",
               "Re-generation requires a NEW empty directory; no resume/force mode."]
-    (out / "REPORT_CORRECTED.md").write_text("\n".join(lines)+"\n")
+    (out / "REPORT.md").write_text("\n".join(lines)+"\n")
 
 
 def generate(run, gold, out, before_dir, runner=subprocess.run):
@@ -271,10 +276,11 @@ def generate(run, gold, out, before_dir, runner=subprocess.run):
                   verification_checks=len(verification["checks"]), required_checks=len(verification["required_ids"]))
     manifest = dict(execution_id=execution_id, generated_at=now_utc(), status="FINALIZED_FOR_GATE",
                     generator_argv=sys.argv,
-                    run_dir=str(run), gold_dir=str(gold), package_dir=str(out), baseline_evidence=evidence,
+                    execution_root=str(ROOT), run_dir=portable_path(run), gold_dir=portable_path(gold),
+                    package_dir=portable_path(out), baseline_evidence=evidence,
                     counts=counts, inventory_exclusions=EXCLUSIONS,
-                    artifacts=["REPORT_CORRECTED.md", "CHANGES.md", "metrics/pooled_corrected.csv",
-                     "metrics/per_quarter_corrected.csv", "metrics/constant_baseline_by_stage.csv", "metrics/model_vs_constant.csv",
+                    artifacts=["REPORT.md", "CHANGES.md", "metrics/pooled.csv",
+                     "metrics/per_quarter.csv", "metrics/constant_baseline_by_stage.csv", "metrics/model_vs_constant.csv",
                      "metrics/convergence_review.json", "verification/verification.json", "verification/recomputed_metrics.json",
                      "verification/sample_inference.json", "test_results/convergence_evaluator_tests.json",
                      "provenance/input_hashes_before.json", "provenance/input_hashes_after.json", "provenance/source_hashes.json",
@@ -287,7 +293,7 @@ def generate(run, gold, out, before_dir, runner=subprocess.run):
 - H4: substantive bytes frozen before inventory; independent check_handoff_package.check_package; mutation/coverage/schema/semantic fixture tests; finite inventory exclusions self/gate/marker.
 - H3: emit_report: main quarterly-capacity; separate global; actual deltas; verify-only checker command only.
 - H5: convergence_review: saved estimators/logs, actual solver/n_iter/max_iter, unknown historical warning capture; metrics/convergence_review.json.
-- Negative paths: verify_pilot_run.registry_summary (duplicate count), compare_quarterly (explicit population N/A), tests_pilot_repair.run_convergence_tests (result['model'], n_iter=1). Production-path regression tests included in summary.
+- Negative paths: verify_baseline.registry_summary (duplicate count), compare_quarterly (explicit population N/A), tests_baseline.run_convergence_tests (result['model'], n_iter=1). Production-path regression tests included in summary.
 """)
     inv = inventory(out)
     write_json(out / INVENTORY, {"exclusions": EXCLUSIONS,

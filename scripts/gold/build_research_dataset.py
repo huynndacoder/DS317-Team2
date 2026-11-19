@@ -6,7 +6,7 @@ Scope: `loan_purpose = 'P'` (Purchase), label determinate and
 never enters the feature matrix.
 
 Three things this script refuses to do:
-  * it never writes to `output/labels/` or `output/gold/gold_v1/`;
+  * it never writes to the label source or overwrites a completed dataset;
   * it never turns an unknown label into 0;
   * it never splits by a fixed year alone and calls that leakage-free. The split
     is expressed as a per-row rule on `label_window_end + reporting_lag <= T`,
@@ -39,7 +39,7 @@ from gold_spec import BASELINE  # noqa: E402  the single source of truth
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 PARQUET = ROOT / "parquet"
-CONFIG_PATH = ROOT / "configs" / "pilot_baseline.yaml"
+CONFIG_PATH = ROOT / "configs" / "baseline.yaml"
 
 
 def load_config(path: str | pathlib.Path = CONFIG_PATH) -> dict:
@@ -59,15 +59,14 @@ def month_index(col: str) -> str:
     """Calendar-month index. Shared with the label builder; never do YYYYMM + 11."""
     return f"(({col} // 100) * 12 + ({col} % 100))"
 LABELS = ROOT / "output" / "labels"
-GOLD = ROOT / "output" / "gold"
-OUT = GOLD / "research_v1"
+OUT = ROOT / "output" / "research"
 MEMORY_LIMIT = os.environ.get("DQ_MEMORY_LIMIT", "3GB")
 THREADS = os.environ.get("DQ_THREADS", "6")
 WORK = pathlib.Path(os.environ.get("DQ_WORK_DIR", ROOT / ".label_tmp"))
 
 # ---------------------------------------------------------------------------
 # Split configuration. Every number here is a stated assumption, not a fact.
-# The single executable config lives in configs/pilot_baseline.yaml. This
+# The single executable config lives in configs/baseline.yaml. This
 # section loads it; env vars can still override individual numbers.
 # ---------------------------------------------------------------------------
 # Months between a label window closing and that label being usable for fitting.
@@ -77,8 +76,7 @@ WORK = pathlib.Path(os.environ.get("DQ_WORK_DIR", ROOT / ".label_tmp"))
 REPORTING_LAG_MONTHS = int(os.environ.get("DQ_REPORTING_LAG_MONTHS", "3"))
 
 # Load config YAML as the single executable config for split parameters.
-# --version defaults to research_v1; pilot_p2 output goes to research_v2.
-# Never let a pilot build silently overwrite research_v1.
+# The default destination is the current research dataset; rebuild into a fresh directory.
 _cfg = load_config()
 _split_cfg = _cfg["split"]
 SPLIT_REGIME = os.environ.get("DQ_SPLIT_REGIME", _split_cfg["regime"])
@@ -686,7 +684,7 @@ def build(con):
         "regime": SPLIT_REGIME,
         "config_used": (
             {"fit_date": T_TRAIN_TUNE, "T_train_tune": T_TRAIN_TUNE,
-             "validation_cohorts": "2009Q1-2013Q4",
+             "validation_cohorts": "2016Q1-2016Q4",
              "validation_ready_by": T_VALID_READY, "T_valid_ready": T_VALID_READY,
              "refit_date": T_REFINIT, "T_refit": T_REFINIT,
              "development_test_cohorts": "2019Q1-2019Q4",
@@ -738,7 +736,7 @@ def build(con):
             if SPLIT_REGIME == "pilot_p2"
             else {"T_train": T_TRAIN, "T_valid": T_VALID,
                   "test_cohort_year": TEST_COHORT_YEAR}),
-        "counts": {r[0]: {"rows": int(r[1]), "positives": int(r[2])}
+        "exclusive_split_counts": {r[0]: {"rows": int(r[1]), "positives": int(r[2])}
                    for r in con.execute(
                        "SELECT split, count(*), sum(label_12m) FROM research "
                        "GROUP BY 1").fetchall()},
@@ -783,6 +781,22 @@ def build(con):
         },
         "checks_passed": True,
     }
+    if SPLIT_REGIME == "pilot_p2":
+        split_manifest["exclusive_split_readiness"] = split_manifest.pop("readiness")
+        split_manifest["readiness"] = {r[0]: {"label_window_end_min": int(r[1]),
+                "label_window_end_max": int(r[2]), "label_known_from": int(r[3]),
+                "label_known_until": int(r[4])}
+            for r in con.execute(f"SELECT m.role, min(r.label_window_end), max(r.label_window_end), "
+                f"min({month_index('r.label_window_end')}) + {REPORTING_LAG_MONTHS}, "
+                f"max({month_index('r.label_window_end')}) + {REPORTING_LAG_MONTHS} "
+                "FROM membership m JOIN research r USING(loan_id) GROUP BY 1").fetchall()}
+        split_manifest["counts"] = {r[0]: {"rows": int(r[1]), "positives": int(r[2])}
+            for r in con.execute("SELECT m.role, count(*), sum(r.label_12m) FROM membership m "
+                                 "JOIN research r USING(loan_id) GROUP BY 1").fetchall()}
+        split_manifest["counts_axis"] = "independent role membership; roles can overlap"
+        split_manifest["files"]["membership"] = "membership.parquet"
+    else:
+        split_manifest["counts"] = split_manifest["exclusive_split_counts"]
     (OUT / "split_manifest.json").write_text(json.dumps(split_manifest, indent=2))
 
     # feature / target / metadata lists as a machine-readable contract
@@ -848,17 +862,16 @@ def build(con):
 
 
 def main():
+    global OUT
     ap = argparse.ArgumentParser()
     ap.add_argument("--stage", choices=["all", "summary"], default="all")
-    ap.add_argument("--version", default="research_v1",
-                    help="output version directory under output/gold/ (default: research_v1)")
+    ap.add_argument("--output-dir", type=pathlib.Path, default=OUT,
+                    help="fresh dataset directory (default: output/research)")
     args = ap.parse_args()
 
-    global OUT
-    OUT = GOLD / args.version
-    if args.version == "research_v1" and SPLIT_REGIME == "pilot_p2":
-        print("WARNING: pilot_p2 regime writing to research_v1 — use --version research_v2 "
-              "for pilot output to avoid clobbering the v1 baseline.")
+    OUT = args.output_dir.resolve()
+    if OUT.exists() and (not OUT.is_dir() or any(OUT.iterdir())):
+        ap.error("refuse nonempty dataset directory; choose a fresh --output-dir")
 
     t0 = time.time()
     con = connect()

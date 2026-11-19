@@ -21,7 +21,7 @@ Cohort maturity là giả định nghiên cứu, không phải quy tắc Freddie
 
 ## Features
 
-18 features theo `configs/pilot_baseline.yaml` và
+18 features theo `configs/baseline.yaml` và
 `scripts/gold/gold_spec.py`; gồm 9 numeric và 9 categorical.
 `number_of_borrowers` là categorical one/multiple/NULL.
 Identifier, label, first-event month và performance/audit columns không vào X.

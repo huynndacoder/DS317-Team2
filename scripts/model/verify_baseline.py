@@ -1,11 +1,11 @@
 """
-verify_pilot_run.py — Independent disk-only verifier for a corrected pilot run (fixes A2/A3/A6).
+verify_baseline.py — Independent disk-only verifier for a corrected pilot run (fixes A2/A3/A6).
 
 CLI:
-  ./venv/bin/python scripts/model/verify_pilot_run.py \
-      --run-dir output/experiments/pilot_corrected_20261115_112427 \
-      --gold-dir output/gold/research_v2 \
-      --output-dir output/audits/<repair-audit-id>/verification
+  ./venv/bin/python scripts/model/verify_baseline.py \
+      --run-dir output/baseline/run \
+      --gold-dir output/research \
+      --output-dir output/checks/<check-id>
 
 Checks (all read disk only, no trainer import, no retrain, no holdout eval):
   1. Membership two-way EXCEPT/ANTI JOIN:
@@ -70,7 +70,7 @@ def setup_logging(log_path: Path):
 
 def log(msg):
     import logging
-    logging.getLogger("verify_pilot_run").info(msg)
+    logging.getLogger("verify_baseline").info(msg)
 
 
 def sha256_file(path: Path) -> str:

@@ -1,0 +1,180 @@
+# Baseline pilot configuration. Named paths; no numbered dataset directories.
+scope:
+  loan_purpose: P
+  horizon_months: 12
+  label_path: output/labels/cohort=*/data.parquet
+  label_version: v3
+  eligible_only: true
+  source: output/research
+features:
+  whitelist:
+  - original_upb
+  - original_loan_term
+  - original_interest_rate
+  - ltv
+  - cltv
+  - dti
+  - mi_percentage
+  - number_of_units
+  - number_of_borrowers
+  - credit_score
+  - first_time_homebuyer_flag
+  - channel
+  - property_type
+  - property_state
+  - occupancy_status
+  - prepayment_penalty_flag
+  - super_conforming_flag
+  - harp_indicator
+  numeric:
+  - original_upb
+  - original_loan_term
+  - original_interest_rate
+  - ltv
+  - cltv
+  - dti
+  - mi_percentage
+  - number_of_units
+  - credit_score
+  categorical:
+  - first_time_homebuyer_flag
+  - channel
+  - property_type
+  - property_state
+  - occupancy_status
+  - prepayment_penalty_flag
+  - super_conforming_flag
+  - harp_indicator
+  - number_of_borrowers
+  identifier:
+  - loan_id
+  split_metadata:
+  - cohort
+  - first_payment_date
+  - label_window_start
+  - label_window_end
+  audit_only:
+  - label_status
+  - eligible_for_primary_study
+  - primary_exclusion_reason
+  - label_reason
+  - observed_month_count_in_window
+  - first_event_month
+  - termination_code
+  - termination_month
+  - performance_cutoff
+  - window_mature
+  - cohort_mature
+  - quality_flags
+  excluded_from_baseline:
+  - vantage_score_4
+  - valuation_method
+  - seller_name
+  - product_type
+  - interest_only_indicator
+  - maturity_date
+  - postal_code
+  - msa
+  - pre_harp_loan_id
+  - program_indicator
+  - quarter
+  - loan_purpose
+  raw_trace:
+  - number_of_borrowers_raw
+label:
+  target: label_12m
+  domain: '{0,1,NULL}'
+  reporting_lag_months: 3
+  reporting_lag_assumption: true
+  cutoff_per_cohort: true
+split:
+  regime: pilot_p2
+  fit_date: 2016-01
+  train_tune_cohorts: 2009Q1-2013Q4
+  validation_cohorts: 2016Q1-2016Q4
+  refit_date: 2019-01
+  train_refit_cohorts: 2012Q1-2016Q4
+  development_test_cohorts: 2019Q1-2019Q4
+  development_test_year: 2019
+  holdout_year: 2024
+  rule: month_index(label_window_end) + reporting_lag <= month_index(T)
+  membership_axis: cohort khởi tạo được chấm điểm
+  eligibility_axis: label_window_end + lag <= fit_date (tính readiness)
+  independent_membership: true
+normalization:
+  pre_split:
+  - giải mã sentinel theo bảng trong gold_spec.py (9999/999/99/9/7/000/'OTHER')
+  - kiểm tra miền giá trị theo giai đoạn áp dụng (LTV/CLTV trước/sau 2018Q2)
+  - biến dẫn xuất công thức cố định (has_mi, borrower_count_band nếu cần)
+  - giữ cột raw cho cột đổi định nghĩa (number_of_borrowers_raw)
+  post_split_only:
+  - điền median/mode (fit trên Train)
+  - scaling numeric (LR; fit trên Train)
+  - học vocabulary / gộp nhóm hiếm theo tần suất (fit trên Train)
+  - chọn feature theo tương quan nhãn
+  - target encoding
+  - resampling / SMOTE
+  - winsorize / cắt outlier
+  constant_removal: xác định trên Train, áp nguyên trạng sang valid/test
+model:
+  seed: 42
+  algorithms:
+  - name: logistic_regression
+    type: linear
+    penalty: l2
+    max_iter: 1000
+    convergence_required: true
+    scaling: StandardScaler fit on training
+  - name: xgboost
+    type: tree
+    objective: binary:logistic
+    method: hist
+    early_stopping: false
+    scaling: không scale numeric (ghi khác biệt so với LR trong config)
+  preprocessing_shared: true
+  missing_indicator: false
+  class_weight: false
+  one_hot:
+    handle_unknown: ignore
+    sparse: true
+    vocabulary_fit: Train
+  categorical_missing: UNKNOWN
+  numeric_impute: median fit trên Train
+resources:
+  memory_limit: 3GB
+  threads: 6
+  spill_dir: .label_tmp
+  model_threads: 2-4 (bắt đầu thấp, kiểm tra RAM thực tế)
+  one_heavy_process_at_a_time: true
+sampling:
+  enabled: false
+  strategy: deterministic theo loan_id, seed cố định
+  target_based: false
+  keep_natural_distribution: true
+reporting:
+  metrics:
+  - average_precision (AP, không trộn với trapezoidal PR-AUC)
+  - roc_auc
+  - brier_score
+  - log_loss
+  - capture_at_5pct
+  - precision_at_5pct
+  - lift_at_5pct
+  topk:
+    batch_by: cohort khởi tạo
+    k: ceil(0.05 * batch_size)
+    tie_break: loan_id cố định
+    lift_formula: precision / prevalence (không dùng alpha=0.05 tuyệt đối khi k làm
+      tròn)
+  aggregation: per-quarter + pooled + mean per-quarter (tên rõ, không trộn)
+  no_positive_batch: recall/lift/AUC = N/A, không giả 0
+  threshold_05: không dùng 0.5 để thay Top-5% business evaluation
+provenance:
+  hash_algorithm: sha256
+  files: []
+  input_files: []
+  generated_at: null
+  label_version: v3
+  research_version: purchase_12m
+  config_hash: null
+  builder_version: pilot_p2

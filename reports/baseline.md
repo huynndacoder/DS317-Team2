@@ -2,7 +2,7 @@
 
 Nguồn của bảng public: package pilot đã được review ngày17/11/2026.
 Chỉ xuất số liệu tổng hợp; không có loan IDs hoặc predictions cá nhân.
-[CSV](pilot-baseline.csv) chứa bốn model/stage rows.
+[CSV](baseline.csv) chứa bốn model/stage rows.
 
 Population: Purchase-only eligible; development cohorts2019 gồm933.708 khoản,
 24.100 positives. Nhãn: serious delinquency90+ hoặc REO trong12 tháng đầu từ

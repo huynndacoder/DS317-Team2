@@ -7,7 +7,7 @@ moved two of them into the performance file. This script reads the parquet
 metadata directly, checks that every column has ONE type across all partitions,
 and reports the distribution of `loan_purpose` including undocumented values.
 
-Read-only. Writes into output/gold/:
+Read-only. Writes into output/schema/:
   orig_schema.csv, orig_schema.md, loan_purpose_stats.csv, loan_purpose_by_cohort.csv
 """
 import os
@@ -18,7 +18,7 @@ import duckdb
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 PARQUET = ROOT / "parquet"
-OUT = ROOT / "output" / "gold"
+OUT = ROOT / "output" / "schema"
 MEMORY_LIMIT = os.environ.get("DQ_MEMORY_LIMIT", "5GB")
 THREADS = os.environ.get("DQ_THREADS", "10")
 WORK = pathlib.Path(os.environ.get("DQ_WORK_DIR", ROOT / ".label_tmp"))

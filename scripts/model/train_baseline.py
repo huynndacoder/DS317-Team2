@@ -1,5 +1,5 @@
 """
-train_pilot_corrected.py — Corrected pilot trainer (fixes F1-F6 per audit).
+train_baseline.py — Corrected pilot trainer (fixes F1-F6 per audit).
 
 Role membership from membership.parquet (not split.parquet alone).
 Two independent preprocessing stages (A: train_tune, B: train_refit).
@@ -8,9 +8,9 @@ XGB: n_jobs=2, random_state=42, no class weighting.
 Per-quarter evaluator with batch budget protocol (k=ceil(0.05*N) per cohort-quarter).
 
 CLI:
-  --config       path to YAML config (default configs/pilot_baseline.yaml)
-  --output-dir   run output dir (default output/experiments/pilot_corrected_<ts>)
-  --version      research version under output/gold/ (default research_v2)
+  --config       path to YAML config (default configs/baseline.yaml)
+  --output-dir   run output dir (default output/experiments/baseline_<timestamp>)
+  --dataset-dir  research dataset directory (default output/research)
 
 Outputs (under --output-dir):
   config_snapshot.yaml, run_manifest.json
@@ -68,7 +68,7 @@ FITTING_ROLES = ("train_tune", "train_refit")
 EVAL_ROLES = ("validation", "development_test")
 NON_FITTING_ROLES = ("development_test", "holdout")
 
-LOG = logging.getLogger("train_pilot_corrected")
+LOG = logging.getLogger("train_baseline")
 
 
 # ---------------------------------------------------------------------------
@@ -841,9 +841,9 @@ def run_unit_tests(numeric, categorical) -> dict:
 # ---------------------------------------------------------------------------
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--config", default="configs/pilot_baseline.yaml")
+    ap.add_argument("--config", default="configs/baseline.yaml")
     ap.add_argument("--output-dir", default=None)
-    ap.add_argument("--version", default="research_v2")
+    ap.add_argument("--dataset-dir", type=Path, default=None)
     args = ap.parse_args()
 
     ROOT = Path(__file__).resolve().parents[2]
@@ -855,7 +855,9 @@ def main():
     c_hash = config_hash(config_path)
 
     ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    out_dir = Path(args.output_dir) if args.output_dir else ROOT / "output" / "experiments" / f"pilot_corrected_{ts}"
+    out_dir = Path(args.output_dir) if args.output_dir else ROOT / "output" / "experiments" / f"baseline_{ts}"
+    if out_dir.exists() and (not out_dir.is_dir() or any(out_dir.iterdir())):
+        ap.error("refuse nonempty run directory; choose a fresh --output-dir")
     out_dir = Path(out_dir)
     models_dir = out_dir / "models"
     preds_dir = out_dir / "predictions"
@@ -865,7 +867,7 @@ def main():
         d.mkdir(parents=True, exist_ok=True)
 
     setup_logging(logs_dir / "train.log")
-    LOG.info("=== Bắt đầu chạy trainer đã sửa (pilot_corrected) ===")
+    LOG.info("=== Bắt đầu chạy baseline trainer ===")
     LOG.info("config=%s config_hash=%s", config_path, c_hash)
     LOG.info("output_dir=%s", out_dir)
     LOG.info("python=%s", sys.version.split()[0])
@@ -878,8 +880,8 @@ def main():
     model_cfg = cfg["model"]
     res_cfg = cfg["resources"]
     report_cfg = cfg["reporting"]
-    version = args.version
-    gold_dir = ROOT / "output" / "gold" / version
+    gold_dir = args.dataset_dir.resolve() if args.dataset_dir else ROOT / "output" / "research"
+    version = "purchase_12m"
     label_path = cfg["scope"]["label_path"]
     reporting_lag = int(cfg["label"]["reporting_lag_months"])
     max_iter = int(model_cfg["algorithms"][0]["max_iter"])
@@ -1287,8 +1289,8 @@ def main():
         f"- Thư mục chạy: {out_dir}",
         f"- Config: {config_path} (hash sha256: {c_hash})",
         f"- Phiên bản dữ liệu: {version} (regime {split_cfg['regime']})",
-        f"- research_v1: giữ nguyên, không đụng, không ghi đè.",
-        f"- Lượt chạy cũ (diagnostic) dưới output/gold/research_v2/pilot/ được giữ nguyên, không ghi đè.",
+        f"- Dataset: {gold_dir}; use a fresh directory for a new dataset.",
+        f"- Accepted baseline: output/baseline/; new runs use a separate output directory.",
         "",
         "## 1. Dữ liệu đầu vào",
         f"- Đọc features.parquet, target.parquet, split.parquet, membership.parquet từ {gold_dir}.",
@@ -1342,9 +1344,9 @@ def main():
         "- Không claim test metrics là upper bound chỉ vì snapshot backfill.",
         "",
         "## 6. Lệnh tái lập (3 bước)",
-        f"1. ./venv/bin/python scripts/gold/build_research_dataset.py --version research_v2",
-        f"2. ./venv/bin/python scripts/gold/verify_research_dataset.py --version research_v2",
-        f"3. ./venv/bin/python scripts/model/train_pilot_corrected.py --config {config_path} --output-dir {out_dir}",
+        f"1. ./venv/bin/python scripts/gold/build_research_dataset.py --output-dir output/research",
+        f"2. ./venv/bin/python scripts/gold/verify_research_dataset.py --dataset-dir output/research",
+        f"3. ./venv/bin/python scripts/model/train_baseline.py --config {config_path} --output-dir {out_dir}",
         "",
         "## 7. Artifacts trong run này",
         f"- config_snapshot.yaml, run_manifest.json (hash config, actual params, thread limits, runtime).",
@@ -1354,7 +1356,7 @@ def main():
         f"- predictions/validation_lr, validation_xgb, development_test_lr, development_test_xgb (.parquet).",
         f"- metrics/per_quarter.csv, metrics/pooled.csv, metrics/verification.json.",
         "",
-        "---\n*Báo cáo tự động tạo bởi train_pilot_corrected.py.*",
+        "---\n*Báo cáo tự động tạo bởi train_baseline.py.*",
     ]
     (out_dir / "REPORT.md").write_text("\n".join(report_lines), encoding="utf-8")
     LOG.info("REPORT.md đã ghi: %s", out_dir / "REPORT.md")

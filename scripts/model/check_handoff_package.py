@@ -5,6 +5,7 @@ import csv
 import hashlib
 import json
 import math
+import shlex
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -12,8 +13,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 INVENTORY = "provenance/artifact_inventory_handoff_sha256.json"
 EXCLUSIONS = [INVENTORY, "completeness_gate.json", "COMPLETE.json"]
-REQUIRED = ["REPORT_CORRECTED.md", "CHANGES.md", "audit_manifest.json",
-    "metrics/pooled_corrected.csv", "metrics/per_quarter_corrected.csv",
+REQUIRED = ["REPORT.md", "CHANGES.md", "audit_manifest.json",
+    "metrics/pooled.csv", "metrics/per_quarter.csv",
     "metrics/constant_baseline_by_stage.csv", "metrics/model_vs_constant.csv", "metrics/convergence_review.json",
     "verification/verification.json", "verification/recomputed_metrics.json", "verification/sample_inference.json",
     "verification/artifact_inventory_sha256.json", "test_results/convergence_evaluator_tests.json",
@@ -55,8 +56,38 @@ def saved_model_metric_matches(a, b):
 
 def verify_only_commands_valid(report, package):
     commands = report.split("## Verify-only commands", 1)[1]
-    return ("train_pilot" not in commands and "build_research" not in commands and
-            "check_handoff_package.py --package-dir " + str(package) in commands)
+    if any(token in commands for token in ("train_pilot", "train_baseline", "build_research")):
+        return False
+    for line in commands.splitlines():
+        try:
+            args = shlex.split(line)
+        except ValueError:
+            continue
+        if "--package-dir" in args and any(Path(a).name == "check_handoff_package.py" for a in args):
+            index = args.index("--package-dir") + 1
+            if index < len(args):
+                candidate = Path(args[index])
+                candidate = candidate if candidate.is_absolute() else ROOT / candidate
+                if candidate.resolve() == Path(package).resolve():
+                    return True
+    return False
+
+
+def input_path(value):
+    path = Path(value)
+    return path if path.is_absolute() else ROOT / path
+
+
+def relocated_argv(argv, manifest):
+    """Compare recorded execution paths without rewriting historical command evidence."""
+    previous_root = Path(manifest.get("execution_root", ROOT))
+    result = []
+    for value in argv:
+        path = Path(value)
+        if path.is_absolute() and path.is_relative_to(previous_root):
+            value = str(ROOT / path.relative_to(previous_root))
+        result.append(value)
+    return result
 
 
 def expected_required_ids():
@@ -112,7 +143,7 @@ def check_package(package, require_complete=True):
         nonlocal manifest
         from collections import Counter
         manifest = read_json(package / "audit_manifest.json")
-        check("manifest_identity", Path(manifest["package_dir"]).resolve() == package and bool(manifest["execution_id"]), "audit_manifest.json")
+        check("manifest_identity", input_path(manifest["package_dir"]).resolve() == package and bool(manifest["execution_id"]), "audit_manifest.json")
         check("manifest_exclusions", manifest["inventory_exclusions"] == EXCLUSIONS)
         check("manifest_artifacts", set(manifest["artifacts"]) <= set(REQUIRED) and all((package/p).is_file() for p in manifest["artifacts"]))
         verification = read_json(package / "verification/verification.json")
@@ -141,17 +172,19 @@ def check_package(package, require_complete=True):
             check("child_fresh_execution", command["execution_id"] == manifest["execution_id"] and command["returncode"] == 0 and
                   command["evidence_sha256"] == digest(target) and end >= start and (previous_end is None or start >= previous_end), command["evidence"])
             previous_end = end
-            script = "tests_pilot_repair.py" if command["name"] == "tests" else "verify_pilot_run.py"
+            script = "tests_baseline.py" if command["name"] == "tests" else "verify_baseline.py"
             expected_argv = [argv[0], str(ROOT/"scripts/model"/script)]
             if command["name"] == "tests":
-                expected_argv += ["--config", str(ROOT/"configs/pilot_baseline.yaml"), "--output-dir", str(package/"test_results")]
+                expected_argv += ["--config", str(ROOT/"configs/baseline.yaml"), "--output-dir", str(package/"test_results")]
             else:
-                expected_argv += ["--run-dir", manifest["run_dir"], "--gold-dir", manifest["gold_dir"], "--output-dir", str(package/"verification")]
-            check("child_argv", argv == expected_argv and all((package/command[k]).is_file() for k in ("stdout", "stderr")))
+                expected_argv += ["--run-dir", str(input_path(manifest["run_dir"])), "--gold-dir", str(input_path(manifest["gold_dir"])), "--output-dir", str(package/"verification")]
+            recorded = relocated_argv(argv, manifest)
+            expected_argv[0] = recorded[0]
+            check("child_argv", recorded == expected_argv and all((package/command[k]).is_file() for k in ("stdout", "stderr")))
     phase("evidence_schema", evidence)
 
     def provenance():
-        run = Path(manifest["run_dir"])
+        run = input_path(manifest["run_dir"])
         before = read_json(package / "provenance/input_hashes_before.json")
         after = read_json(package / "provenance/input_hashes_after.json")
         check("original_18_unchanged", len(before) == 18 and before == after == read_json(package/"verification/artifact_inventory_sha256.json"))
@@ -159,7 +192,7 @@ def check_package(package, require_complete=True):
             path = run / rel
             check("original_input_hash", path.is_file() and digest(path) == record["sha256"] and path.stat().st_size == record["size"], rel)
         sources = read_json(package / "provenance/source_hashes.json")
-        expected_sources = {"scripts/model/"+s for s in ("train_pilot_corrected.py", "verify_pilot_run.py", "tests_pilot_repair.py", "generate_handoff_package.py", "check_handoff_package.py", "tests_handoff_package.py")} | {"configs/pilot_baseline.yaml"}
+        expected_sources = {"scripts/model/"+s for s in ("train_baseline.py", "verify_baseline.py", "tests_baseline.py", "generate_handoff_package.py", "check_handoff_package.py", "tests_handoff_package.py")} | {"configs/baseline.yaml"}
         check("source_coverage", set(sources) == expected_sources)
         for rel, value in sources.items():
             check("source_hash", digest(ROOT/rel) == value, rel)
@@ -173,11 +206,11 @@ def check_package(package, require_complete=True):
         import numpy as np
         import pandas as pd
         from sklearn.metrics import brier_score_loss, log_loss
-        run, gold = Path(manifest["run_dir"]), Path(manifest["gold_dir"])
-        pooled = csv_rows(package / "metrics/pooled_corrected.csv")
+        run, gold = input_path(manifest["run_dir"]), input_path(manifest["gold_dir"])
+        pooled = csv_rows(package / "metrics/pooled.csv")
         baseline = csv_rows(package / "metrics/constant_baseline_by_stage.csv")
         deltas = csv_rows(package / "metrics/model_vs_constant.csv")
-        perq = csv_rows(package / "metrics/per_quarter_corrected.csv")
+        perq = csv_rows(package / "metrics/per_quarter.csv")
         expected_keys = {(m, s) for m in MODELS for s in STAGES}
         for name, rows in (("pooled", pooled), ("model_vs_constant", deltas)):
             check("csv_keys", len(rows) == 4 and {(r["model"], r["stage"]) for r in rows} == expected_keys, name)
@@ -258,7 +291,7 @@ def check_package(package, require_complete=True):
                   r["finite_coefficients"] == bool(np.isfinite(model.coef_).all() and np.isfinite(model.intercept_).all()) and r["model_sha256"] == digest(path))
         for rel, h in convergence["historical_log_hashes"].items():
             check("historical_log_hash", digest(run/rel) == h, rel)
-        report = (package/"REPORT_CORRECTED.md").read_text()
+        report = (package/"REPORT.md").read_text()
         check("report_computed_baseline", json.dumps(manifest["baseline_evidence"], indent=2) in report)
         check("report_computed_deltas", json.dumps([{k: (v if k in ("model", "stage") else float(v)) for k,v in r.items()} for r in deltas], indent=2) in report)
         check("report_convergence", json.dumps(convergence, indent=2) in report)

@@ -27,7 +27,7 @@ import csv
 import pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-OUT = ROOT / "output" / "gold"
+OUT = ROOT / "output" / "research"
 
 # ---------------------------------------------------------------------------
 # Roles. Every column in Gold v1 (features + audit) gets exactly one.

@@ -35,8 +35,7 @@ import duckdb
 ROOT = Path(__file__).resolve().parents[2]
 PARQUET = ROOT / "parquet"
 LABELS = ROOT / "output" / "labels"
-GOLD = ROOT / "output" / "gold"
-OUT = GOLD / "research_v1"
+OUT = ROOT / "output" / "research"
 
 PASS, FAIL = [], []
 
@@ -55,13 +54,13 @@ def month_index(col):
 
 
 def main():
+    global OUT
     ap = argparse.ArgumentParser()
-    ap.add_argument("--version", default="research_v1",
-                    help="version directory under output/gold/ to verify (default: research_v1)")
+    ap.add_argument("--dataset-dir", type=Path, default=OUT,
+                    help="research dataset directory (default: output/research)")
     args = ap.parse_args()
 
-    global OUT
-    OUT = GOLD / args.version
+    OUT = args.dataset_dir.resolve()
     con = duckdb.connect()
     con.execute(f"SET memory_limit='{os.environ.get('DQ_MEMORY_LIMIT','3GB')}'")
     con.execute(f"SET threads={int(os.environ.get('DQ_THREADS','6'))}")

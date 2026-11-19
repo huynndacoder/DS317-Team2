@@ -400,12 +400,12 @@ performance (202603), không phải đọc từ metadata phát hành.
 **4. Bảng trước/sau theo cohort.** `output/label_tables/label_changes_summary.csv`
 thay cho file diff từng khoản vay (43 MB, 897.664 dòng — đã xoá).
 
-**5. Schema origination.** `output/gold/orig_schema.{csv,md}`,
+**5. Schema origination.** `output/schema/orig_schema.{csv,md}`,
 `loan_purpose_stats.csv`, `loan_purpose_by_cohort.csv`: 31 cột, mỗi cột một kiểu
 duy nhất trên 110 partition, `loan_purpose` `N` 38,29% / `P` 37,28% / `C` 24,43%
 / `9` 51 dòng (1999Q1–Q3, giữ nguyên không đổi thành `N`).
 
-**6. Gold.** `scripts/gold/build_gold.py` — danh sách đặc trưng **cho phép**
-(allow-list), audit tách riêng, join 1:1 được **khẳng định** chứ không giả định.
-Kết quả v1: `output/gold/gold_v1/features/` 45.875.517 dòng × 26 cột (470 MB),
-`audit/` 49.348.308 dòng (253 MB), toàn bộ check đạt. Chưa train, chưa chia tập.
+**6. Dữ liệu nghiên cứu.** `scripts/gold/build_research_dataset.py` dùng allow-list,
+lọc Purchase eligible và kiểm tra join 1:1. Bộ hiện hành ở `output/research/` có
+16.641.482 khoản và 18 predictors; nhãn toàn origination giữ riêng ở `output/labels/`.
+Role pilot lấy từ `membership.parquet`; xem `docs/data-contract.md`.

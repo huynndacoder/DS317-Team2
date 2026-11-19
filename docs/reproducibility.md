@@ -1,83 +1,81 @@
-# Tái lập và kiểm chứng
+# Chạy và kiểm chứng
 
-## 1. Synthetic tests — không cần dữ liệu
+## Synthetic tests
 
-Từ repo root, Python >=3.12; baseline được kiểm chứng với Python3.14.8:
+Python >=3.12; baseline dùng Python 3.14.8.
 
 ```bash
-python3.14 -m venv venv
 ./venv/bin/python -m pip install -r requirements.txt
 make test
 ```
 
-Label tests dùng DuckDB fixtures; model/package tests dùng synthetic data và
-mocked child runners. Các test này không gọi full-data pipeline.
+Tests dùng fixtures, không train dữ liệu thật/đọc holdout.
+CLI tương thích duy nhất nằm trong README và tài liệu này.
 
-## 2. Dữ liệu local — tác vụ nặng
+## Dữ liệu đã bàn giao
 
-Tự lấy dữ liệu Freddie Mac từ nguồn chính thức. Không có downloader tự đăng nhập.
-Kiểm tra zip members trước; ingest streaming tránh landing TXT đầy đủ:
+Đặt bốn Parquet cùng metadata vào output/research/, baseline run/report vào output/baseline/.
+Chạy:
+
+```bash
+make verify-dataset
+make verify-baseline
+```
+
+verify-dataset đối chiếu origination/labels nên cần các nguồn này nếu muốn chạy full check.
+Người chỉ dùng model/EDA có thể bắt đầu bằng make test và các counts/schema trong manifest.
+verify-baseline cần target/membership và saved run; không train hoặc rebuild.
+Gói report dùng đường dẫn tương đối repo, giữ command evidence lịch sử trong provenance.
+
+## Chỉ khi cần dựng dữ liệu mới — tác vụ nặng
 
 ```bash
 ./venv/bin/python scripts/ingest_stream.py list --src data
 ./venv/bin/python scripts/ingest_stream.py ingest --src data
-```
-
-Kết quả cần layout `parquet/{orig,perf}/quarter=YYYYQn/data.parquet`.
-Sau đó mới build/verify labels và Gold:
-
-```bash
 DQ_MEMORY_LIMIT=3GB DQ_THREADS=2 bash scripts/label/run_labels.sh
-DQ_MEMORY_LIMIT=3GB DQ_THREADS=2 ./venv/bin/python scripts/gold/build_research_dataset.py --version research_v2
-DQ_MEMORY_LIMIT=3GB DQ_THREADS=2 ./venv/bin/python scripts/gold/verify_research_dataset.py --version research_v2
+DQ_MEMORY_LIMIT=3GB DQ_THREADS=2 ./venv/bin/python scripts/gold/build_research_dataset.py --output-dir output/research
 ```
 
-Các lệnh trên đọc dữ liệu thật và có thể chạy lâu.
-Không dùng `--force` hay rebuild trên thư mục đã freeze mà chưa chủ ý tạo phiên bản mới.
-Giữ config/rules của baseline; thí nghiệm mới dùng config và output version riêng.
+Builder từ chối thư mục có dữ liệu. Với snapshot mới, chọn một thư mục mới; không ghi đè
+dataset đã bàn giao. Không cần rebuild vì clone repo hoặc đổi tên thư mục.
+Nhãn và Parquet gốc đã có không cần chạy lại cho mỗi model.
 
-## 3. Training — không phải verify-only
+## Training một run mới
 
-Chỉ chạy khi đã có Gold và đã chốt protocol:
+Sau khi có Gold và protocol:
 
 ```bash
-./venv/bin/python scripts/model/train_pilot_corrected.py --config configs/pilot_baseline.yaml --version research_v2
+./venv/bin/python scripts/model/train_baseline.py --config configs/baseline.yaml --dataset-dir output/research
 ```
 
-Trainer tạo run mới có models/preprocessing/predictions/metrics.
-Không trỏ output-dir vào original run hoặc package đã hoàn tất.
-Giới hạn DuckDB không giới hạn toàn bộ RAM của pandas/model.
+Trainer tự tạo output/experiments/baseline_<timestamp>, từ chối output nonempty.
+Đây là trainer baseline pilot 2019; runner nhiều windows chưa được triển khai.
+Median/scaler/vocabulary học riêng từ training mỗi stage. Holdout 2024 để riêng.
+DuckDB memory_limit không giới hạn RAM pandas/model; mỗi lúc chỉ một heavy process.
 
-## 4. Kiểm saved artifacts
-
-Với run và Gold local tương ứng:
+## Kiểm saved run và tạo report
 
 ```bash
-./venv/bin/python scripts/model/verify_pilot_run.py --run-dir output/experiments/<run-id> --gold-dir output/gold/research_v2 --output-dir output/audits/<new-id>/verification
+./venv/bin/python scripts/model/verify_baseline.py --run-dir output/baseline/run --gold-dir output/research --output-dir output/checks/baseline
+./venv/bin/python scripts/model/check_handoff_package.py --package-dir output/baseline/report
 ```
 
-Để tạo package, `generate_handoff_package.py` yêu cầu
-`--before-provenance`: một thư mục snapshot **tạo trước khi sửa/chạy** gồm
-`input_hashes_before.json`, `source_hashes_before.json`,
-`git_status_before.txt` và `dependency_versions.json`.
-Input inventory phải là 18 files của saved pilot run theo contract generator.
-Không tạo provenance giả bằng cách ghi số đã biết; xem
-`generate_handoff_package.generate` và fixture trong `tests_handoff_package.py`.
+Generator generate_handoff_package.py cần --run-dir, --gold-dir, --output-dir và
+--before-provenance. Snapshot before-provenance tạo TRƯỚC thay đổi, gồm
+input_hashes_before.json, source_hashes_before.json, git_status_before.txt, dependency_versions.json.
+Generator chạy tests rồi verifier, không fit model; output phải mới/rỗng.
+Report hiện hành đã có; không chạy generator chỉ để đọc kết quả.
 
-Generator orchestrates tests + một real verifier, cần output-dir mới rỗng.
-Nó không train models. Package không nằm trong Git vì chứa paths và artifacts local.
-Với package đã hoàn tất, chỉ cần checker:
+## Chạy lại classwork trên mẫu
+
+Cần output/research, output/baseline/report và run, parquet/orig, cùng output/schema/orig_schema.csv.
+Nếu chưa có schema, nhận gói inventory hoặc chạy export_orig_schema.py trên origination.
+Inventory trong evidence phản ánh các file có trên máy; performance không dùng để fit model mẫu.
 
 ```bash
-./venv/bin/python scripts/model/check_handoff_package.py --package-dir output/audits/<package-id>
+./venv/bin/python -m pip install -r requirements-classwork.txt
+./venv/bin/python scripts/classwork/run_homework.py --out-dir output/classwork
 ```
 
-Không cần lặp full verifier để kiểm package. Gate kiểm schema/content, baseline bằng
-saved evaluation labels, command evidence, source/input hashes và completion marker.
-
-## 5. EDA/DQ tiếp theo
-
-Các notebook, SQL và entrypoint EDA/DQ legacy đã được xóa; không còn lệnh cài
-dependencies hoặc chạy notebooks cũ. EDA/DQ theo scope nghiên cứu cần triển khai mới.
-Dùng Gold và metadata làm đầu vào chính; chỉ đọc performance khi cần audit nhãn cụ thể.
-Việc xóa legacy không yêu cầu ingest lại dữ liệu, rebuild labels/Gold hoặc retrain pilot.
+Script từ chối output đã có; dùng một thư mục experiment mới khi muốn chạy lại.
+Không train classifier mới và không đánh giá holdout. Xem scope/limitations trong evidence.json.
