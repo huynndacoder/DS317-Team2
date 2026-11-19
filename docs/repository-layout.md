@@ -5,7 +5,6 @@
 - Source ingest, labels, Gold, model và verifier/package checker.
 - Cấu hình pilot và dependency declarations.
 - Synthetic tests/CI.
-- Notebook/SQL source không có outputs.
 - Tài liệu phương pháp, trạng thái và số liệu tổng hợp không có loan IDs.
 
 ## Giữ local
@@ -31,6 +30,11 @@ TXT/warehouse cũ khỏi HEAD; chúng không bị xóa khỏi workspace gốc.
 Lịch sử Git không được rewrite.
 Source nhãn/Gold/model đã audit được giữ nguyên nội dung và đường dẫn tương đối.
 
-EDA/DQ notebooks được strip outputs trong bản public. Notebook gốc vẫn ở workspace local.
+Đợt dọn tiếp theo xóa EDA/DQ notebooks, SQL khám phá, DQ coursework engine và
+dependency file chỉ phục vụ notebooks khỏi source hiện hành. Các bản legacy local,
+pipeline TXT/warehouse, launcher CLDL cũ và trainer pilot chưa sửa cũng đã được xóa;
+không chuyển chúng vào archive.
+Giữ ingest streaming, labels, Gold, corrected trainer và các tests/verifiers đang dùng.
+Parquet, labels, Gold, models/predictions và kết quả đã chốt không thuộc phạm vi xóa.
 Các script literature search và agent instructions chưa phải phương pháp nghiên cứu đã chốt,
 nên không được xuất bản thành kết quả có thẩm quyền.

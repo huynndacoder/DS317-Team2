@@ -75,12 +75,9 @@ Với package đã hoàn tất, chỉ cần checker:
 Không cần lặp full verifier để kiểm package. Gate kiểm schema/content, baseline bằng
 saved evaluation labels, command evidence, source/input hashes và completion marker.
 
-## 5. Notebooks
+## 5. EDA/DQ tiếp theo
 
-```bash
-./venv/bin/python -m pip install -r requirements-notebooks.txt
-```
-
-Notebooks public không có outputs hoặc row-level samples.
-EDA cũ dùng population/horizon khám phá riêng; DQ notebook cần TXT layout local cũ.
-Xem ghi chú đầu notebook và README. Không chạy toàn performance để thử môi trường.
+Các notebook, SQL và entrypoint EDA/DQ legacy đã được xóa; không còn lệnh cài
+dependencies hoặc chạy notebooks cũ. EDA/DQ theo scope nghiên cứu cần triển khai mới.
+Dùng Gold và metadata làm đầu vào chính; chỉ đọc performance khi cần audit nhãn cụ thể.
+Việc xóa legacy không yêu cầu ingest lại dữ liệu, rebuild labels/Gold hoặc retrain pilot.

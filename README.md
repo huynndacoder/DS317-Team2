@@ -48,8 +48,6 @@ scripts/ingest_stream.py  Zip → Parquet, không ghi toàn bộ TXT ra đĩa
 scripts/label/           Profiling, nhãn 12 tháng và kiểm chứng
 scripts/gold/            Feature contract, Purchase Gold và membership
 scripts/model/           Training pilot, evaluator, verifier và package checker
-scripts/dq_core.py       DQ coursework cũ; xem giới hạn bên dưới
-notebooks/               EDA/DQ source, đã bỏ outputs
 docs/                    Data contract, tái lập và trạng thái nghiên cứu
 reports/                 Chỉ kết quả tổng hợp, không có loan-level rows
 ```
@@ -72,14 +70,17 @@ Pipeline thật cần `parquet/` và `output/` local. Xem tài liệu tái lập
 build nhãn/Gold và training là tác vụ nặng, khác với synthetic tests.
 Trên máy dùng chung chỉ chạy một heavy training process tại một thời điểm.
 
-## DQ và notebook
+## EDA và chất lượng dữ liệu
 
 Sáu chiều CLDL: **Completeness, Validity, Uniqueness, Consistency, Accuracy,
 Timeliness**. Các chỉ số delinquency/prepayment/UPB là chỉ số tín dụng.
 
-Notebook và `dq_core.py` giữ lại phần khám phá/coursework để nhóm tiếp tục làm việc.
-Một số phần dùng TXT layout cũ, proxy cho accuracy/timeliness và diagnostic plane
-chuyển thể. Chúng chưa phải kết quả DQ đã nghiệm thu cho Purchase Gold và
-**không phải triển khai AccTEMPO nguyên bản**.
-Notebook performance cũ có horizon khám phá riêng; production label tuân theo
-data contract 12 tháng. Không dùng notebook để thay quy tắc nhãn.
+Code EDA/DQ legacy và các notebook/SQL khám phá cũ đã được xóa.
+Repo hiện chưa có entrypoint EDA/DQ thay thế được nghiệm thu cho Purchase Gold.
+Triển khai mới trên Gold một dòng/khoản vay, dùng nhãn `label_12m` đã kiểm chứng,
+chọn role qua `membership.parquet` và giữ holdout 2024 ngoài việc chọn phương pháp.
+Xem [công việc tiếp theo](docs/project-status.md).
+
+Pipeline được hỗ trợ: streaming ingest → labels → Purchase Gold →
+`train_pilot_corrected.py` → verifier/package checker. Không cần dựng warehouse
+hoặc giải nén toàn bộ TXT để chạy pipeline này.

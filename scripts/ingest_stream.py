@@ -44,7 +44,7 @@ Usage
     python scripts/ingest_stream.py ingest --src path/historical_data_2005Q2.zip
     python scripts/ingest_stream.py ingest --src path/to/historical_data_2005Q2/
 
-Output matches the existing layout so `export_parquet.py` consumers keep working:
+Output uses the canonical partition layout consumed by labels and Gold:
 
     parquet/orig/quarter=2005Q2/data.parquet
     parquet/perf/quarter=2005Q2/data.parquet
@@ -82,7 +82,7 @@ COMPRESSION = "zstd"
 ROW_GROUP_SIZE = 122880
 
 # Column order is file order; names follow the July 2026 file headers, which are
-# the canonical vocabulary the rest of the repo (dq_core.py) already uses.
+# the canonical vocabulary used by the label and Gold pipelines.
 # Positions are stable across releases; later additions are appended, so an
 # older, narrower file maps cleanly onto the head of this list.
 ORIG_CANON: list[tuple[str, str]] = [
@@ -176,7 +176,7 @@ def connect() -> duckdb.DuckDBPyConnection:
     con.execute(f"SET memory_limit='{MEMORY_LIMIT}'")
     con.execute(f"SET temp_directory='{WORK_DIR}'")
     # Parquet row order is not meaningful for this dataset and preserving it
-    # forces materialisation; see build_warehouse.py for the same reasoning.
+    # forces materialisation and unnecessary memory use.
     con.execute("SET preserve_insertion_order=false")
     return con
 
@@ -235,7 +235,7 @@ def select_sql(width: int, canon: list[tuple[str, str]], quarter: str) -> str:
     the same table as a 2026 vintage.
 
     `quarter` is stored physically (not only in the path) so the output is
-    schema-identical to what export_parquet.py already produced.
+    compatible with the partition schema consumed by labels and Gold.
     """
     parts: list[str] = []
     for i, (name, typ) in enumerate(canon):

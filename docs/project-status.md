@@ -17,7 +17,8 @@ Các con số checks là trạng thái tại mốc baseline, không phải mục
 
 1. Chốt protocol so training windows3/5/10 năm và expanding.
 2. Kiểm runner một development fold rồi mở rộng nhiều OOT folds.
-3. Hoàn thiện DQ theo chương4 trên scope Purchase/current split.
+3. Triển khai EDA/DQ mới trên Purchase/current split: population và role counts,
+   label rates, missing/domain, phân phối và drift theo cohort. Dùng nhãn 12 tháng có sẵn.
 4. Chọn một cải tiến có paper support, ví dụ recency weighting; kiểm chứng bằng ablation.
 5. Khóa phương pháp trước final holdout, làm demo và báo cáo tổng hợp.
 
@@ -28,7 +29,7 @@ Trên máy chung chỉ chạy một heavy training process.
 ## Những giới hạn cần trình bày
 
 - Baseline hiện tại chưa phải SOTA hoặc kết quả so training windows.
-- DQ scripts cũ có proxy cho accuracy/timeliness và scope chưa đồng bộ.
-- Diagnostic plane cũ không phải AccTEMPO nguyên bản.
+- EDA/DQ legacy đã xóa; chưa có EDA/DQ thay thế được nghiệm thu.
+- Accuracy/timeliness cần nguồn kiểm chứng hoặc ghi rõ proxy/N/A; chưa tái lập AccTEMPO.
 - Lag3 và availability của dữ liệu là giả định có giới hạn.
 - Nguồn Freddie Mac thuộc thị trường Mỹ; chưa kiểm chứng khả năng chuyển sang Việt Nam.
