@@ -8,7 +8,7 @@ Khi một khoản vay mua nhà mới bắt đầu, ta chỉ biết hồ sơ lúc
 
 Đồ án tập trung vào khoản vay **mua nhà (Purchase)**. Câu hỏi nghiên cứu chính là: **dùng lịch sử huấn luyện dài bao nhiêu năm thì dự đoán tốt hơn trên dữ liệu tương lai?**
 
-Phần chuẩn bị dữ liệu đã xong và đã có hai mô hình chạy thử: Logistic Regression (LR) và XGBoost. Team bắt đầu từ dữ liệu đã bàn giao để phân tích, thiết kế thí nghiệm và xây dựng demo.
+Phần chuẩn bị dữ liệu đã xong và đã có hai mô hình chạy thử: Logistic Regression (LR) và XGBoost.
 
 ## Buổi đầu tiên: làm theo 4 bước
 
@@ -28,7 +28,7 @@ Nếu chưa có môi trường Python, làm mục 1 trong [hướng dẫn chạy
 | Kiểm tra chất lượng dữ liệu nguồn | `02_DU_LIEU_GOC_VA_NHAN`: orig, labels, label_tables, schema | `parquet/orig/`, `output/labels/`, `output/label_tables/`, `output/schema/` | 724 MiB |
 | Đọc kết quả bài tập trên lớp | `05_BAI_TAP_TREN_LOP/classwork` | `output/classwork/` | 3 MiB |
 
-**Phân chia trách nhiệm:** Sy giữ phần dữ liệu gốc, tạo nhãn và dựng dữ liệu bàn giao. Teammate làm trên các gói output. Nhân có thể đọc thêm origination để đo DQ; nếu cần thay đổi dữ liệu chuẩn, thống nhất với Sy trước.
+Nhân có thể đọc thêm origination để đo DQ. Nếu cần thay đổi dữ liệu chuẩn, ghi rõ phát hiện và đề xuất trước khi dựng bản mới.
 
 Không cần tải 2,89 tỷ dòng performance cho công việc EDA/model thông thường. Nếu cần thống kê từ nguồn chưa có trong gói bàn giao, nhờ Sy xuất bảng tổng hợp.
 
@@ -138,7 +138,7 @@ Huy, Nhân, Ys và Hiền có thể bắt đầu song song. Hiển bắt đầu 
 
 Thứ tự thực nghiệm: **Raw với các cửa sổ train → chọn thiết kế đã thống nhất → kiểm tra cải tiến/làm giàu**. Không đổi cửa sổ và thêm đặc trưng cùng lúc rồi quy toàn bộ chênh lệch cho một yếu tố.
 
-Sy giữ dữ liệu chuẩn, review protocol, tích hợp kết quả và quyết định thời điểm mở holdout 2024. Không dùng holdout để chọn model hoặc tham số.
+Sy review protocol, tích hợp kết quả và quyết định thời điểm mở holdout 2024. Không dùng holdout để chọn model hoặc tham số.
 
 ## Mỗi người bàn giao như thế nào?
 

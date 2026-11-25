@@ -10,7 +10,6 @@ Câu hỏi nghiên cứu: **dùng lịch sử huấn luyện 3, 5, 10 năm hay t
 
 - Code/tài liệu: repo này.
 - Dữ liệu, saved models và predictions: [Drive nhóm](https://drive.google.com/drive/folders/1xoLgyWRgFcv0Si5hqbS_7K6TfgPRG6rK).
-- Chuẩn bị dữ liệu: Sy phụ trách. Team bắt đầu từ output đã bàn giao.
 
 ## Hiện đã có gì?
 

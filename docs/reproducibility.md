@@ -1,6 +1,6 @@
 # Cách chạy — chọn đúng việc mình cần
 
-Teammate bắt đầu từ dữ liệu đã bàn giao. Nhận gói và đặt đúng thư mục theo [handoff.md](handoff.md). Không cần chạy ingestion, tạo nhãn hoặc train lại để đọc kết quả.
+Nhận gói và đặt đúng thư mục theo [handoff.md](handoff.md). Không cần chạy ingestion, tạo nhãn hoặc train lại để đọc kết quả.
 
 ## 1. Chuẩn bị môi trường một lần
 

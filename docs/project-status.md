@@ -23,7 +23,7 @@
 | Ys | Chốt paper đủ tiêu chí nơi công bố và phù hợp bài toán; mô tả một cải tiến/ablation |
 | Hiền | Demo dùng saved preprocessing + model và kết quả hiện hành |
 
-Sy tiếp tục giữ phần chuẩn bị dữ liệu và tích hợp. Hướng dẫn đầu vào, việc đầu tiên và kết quả cần nộp: [handoff.md](handoff.md).
+Hướng dẫn đầu vào, việc đầu tiên và kết quả cần nộp: [handoff.md](handoff.md).
 
 ## Bài tập trên lớp
 
